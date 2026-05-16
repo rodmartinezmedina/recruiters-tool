@@ -257,6 +257,7 @@ export function extractLocationsFromMessage(
   newLocations: string[];
   existingLocations: string[];
   isAdditive: boolean;
+  isReplacement: boolean;
 } | null {
   const lower = message.toLowerCase();
   const existingLocations = currentFilters
@@ -266,6 +267,7 @@ export function extractLocationsFromMessage(
   if (existingLocations.length === 0) return null;
 
   const isAdditive = /\b(also|include|add|as well|too|both|additionally)\b/.test(lower);
+  const isReplacement = /\b(should be|change to|switch to|make it|update to|set to|only|instead|replace)\b/.test(lower);
 
   const newLocations: string[] = [];
   const locationEntries = Object.entries(LOCATION_MAP).sort(
@@ -283,5 +285,5 @@ export function extractLocationsFromMessage(
 
   if (newLocations.length === 0) return null;
 
-  return { newLocations, existingLocations, isAdditive };
+  return { newLocations, existingLocations, isAdditive, isReplacement };
 }

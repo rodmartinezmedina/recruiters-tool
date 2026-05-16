@@ -44,6 +44,19 @@ export default function GeoDropdown({ selectedLocations, onToggle, onClose }: Pr
 
   const selectedSet = new Set(selectedLocations.map((l) => l.toLowerCase()));
 
+  const COUNTRY_ALIASES: Record<string, string> = {
+    "united kingdom": "UK",
+    uk: "UK",
+  };
+
+  function isCitySelected(city: string, country: string): boolean {
+    if (selectedSet.has(city.toLowerCase())) return true;
+    if (selectedSet.has(country.toLowerCase())) return true;
+    const alias = COUNTRY_ALIASES[country.toLowerCase()];
+    if (alias && selectedSet.has(alias.toLowerCase())) return true;
+    return false;
+  }
+
   return (
     <div
       ref={ref}
@@ -62,7 +75,7 @@ export default function GeoDropdown({ selectedLocations, onToggle, onClose }: Pr
               {country}
             </div>
             {data.cities.map((city) => {
-              const isSelected = selectedSet.has(city.toLowerCase());
+              const isSelected = isCitySelected(city, country);
               return (
                 <button
                   key={city}

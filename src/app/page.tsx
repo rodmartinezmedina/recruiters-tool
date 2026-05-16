@@ -178,7 +178,7 @@ export default function Home() {
       const locationResult = extractLocationsFromMessage(message, filters);
 
       if (locationResult) {
-        const { newLocations, existingLocations, isAdditive } = locationResult;
+        const { newLocations, existingLocations, isAdditive, isReplacement } = locationResult;
 
         if (isAdditive) {
           setTimeout(() => {
@@ -196,6 +196,25 @@ export default function Home() {
               {
                 role: "assistant",
                 content: `Added **${newLocations.join(", ")}** to your location filters. Now searching across ${allLocs.length} locations: ${allLocs.join(", ")}.`,
+                type: "info",
+              },
+            ]);
+          }, 400);
+        } else if (isReplacement) {
+          setTimeout(() => {
+            setFilters((prev) => [
+              ...prev.filter((f) => f.type !== "Location"),
+              ...newLocations.map((loc) => ({
+                type: "Location" as const,
+                value: loc,
+                source: "manual" as const,
+              })),
+            ]);
+            setAiMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: `Location updated to **${newLocations.join(", ")}**.`,
                 type: "info",
               },
             ]);
