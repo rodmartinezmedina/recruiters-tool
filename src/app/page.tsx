@@ -222,14 +222,12 @@ export default function Home() {
       const currentLoc = locationConflict?.value || "";
 
       if (option.startsWith("Include Both")) {
-        setFilters((prev) =>
-          prev.map((f) => (f.type === "Location" ? { ...f, value: "+2 Locations" } : f))
-        );
+        setFilters((prev) => prev.filter((f) => f.type !== "Location"));
         setAiMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            content: `**Location conflict resolved.** Searching across both locations.`,
+            content: `**Location conflict resolved.** Removed the location filter to search across all locations.`,
             type: "resolution",
           },
         ]);
