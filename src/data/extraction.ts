@@ -130,13 +130,14 @@ const LOCATION_MAP: Record<string, string> = {
   netherlands: "Netherlands",
   france: "France",
   portugal: "Portugal",
-  uk: "London",
+  uk: "United Kingdom",
+  "united kingdom": "United Kingdom",
   sweden: "Sweden",
   italy: "Italy",
   poland: "Poland",
   denmark: "Denmark",
-  ireland: "Dublin",
-  switzerland: "Zurich",
+  ireland: "Ireland",
+  switzerland: "Switzerland",
   eu: "EU",
 };
 
@@ -249,17 +250,38 @@ export function extractFilters(prompt: string): Filter[] {
   return filters;
 }
 
-export function extractLocationFromMessage(
+export function extractLocationsFromMessage(
   message: string,
   currentFilters: Filter[]
-): { newLocation: string; conflictsWith: string } | null {
+): {
+  newLocations: string[];
+  existingLocations: string[];
+  isAdditive: boolean;
+} | null {
   const lower = message.toLowerCase();
-  const currentLocation = currentFilters.find((f) => f.type === "Location")?.value;
+  const existingLocations = currentFilters
+    .filter((f) => f.type === "Location")
+    .map((f) => f.value);
 
-  for (const [keyword, location] of Object.entries(LOCATION_MAP)) {
-    if (lower.includes(keyword) && currentLocation && currentLocation !== location) {
-      return { newLocation: location, conflictsWith: currentLocation };
+  if (existingLocations.length === 0) return null;
+
+  const isAdditive = /\b(also|include|add|as well|too|both|additionally)\b/.test(lower);
+
+  const newLocations: string[] = [];
+  const locationEntries = Object.entries(LOCATION_MAP).sort(
+    (a, b) => b[0].length - a[0].length
+  );
+  for (const [keyword, location] of locationEntries) {
+    if (
+      lower.includes(keyword) &&
+      !existingLocations.includes(location) &&
+      !newLocations.includes(location)
+    ) {
+      newLocations.push(location);
     }
   }
-  return null;
+
+  if (newLocations.length === 0) return null;
+
+  return { newLocations, existingLocations, isAdditive };
 }

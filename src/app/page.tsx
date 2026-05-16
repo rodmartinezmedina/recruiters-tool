@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { candidates as allCandidates, Candidate } from "@/data/candidates";
-import { extractFilters, extractLocationFromMessage } from "@/data/extraction";
+import { extractFilters, extractLocationsFromMessage } from "@/data/extraction";
 import { filterAndScore } from "@/data/filtering";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
@@ -45,6 +45,7 @@ export default function Home() {
   const [aiMessages, setAiMessages] = useState<AIMessage[]>([]);
   const [showFilterSidebar, setShowFilterSidebar] = useState(false);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const [pendingNewLocations, setPendingNewLocations] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filteredCandidates = useMemo(() => {
@@ -70,13 +71,14 @@ export default function Home() {
       const q = searchPrompt || prompt;
       if (!q.trim()) return;
 
+      const isResearch = appState !== "start";
       setPrompt(q);
       const extracted = extractFilters(q);
 
       if (extracted.length === 0) {
         setFilters([]);
         setAppState("zero-results");
-        setAiMessages([
+        const noResultsMsgs: AIMessage[] = [
           {
             role: "system",
             content: `"${q}"`,
@@ -88,7 +90,16 @@ export default function Home() {
               "I couldn't extract any specific search dimensions from your prompt. Try including a role, skills, location, or experience level.",
             type: "info",
           },
-        ]);
+        ];
+        if (isResearch) {
+          setAiMessages((prev) => [
+            ...prev,
+            { role: "user", content: `New search: "${q}"` },
+            ...noResultsMsgs.slice(1),
+          ]);
+        } else {
+          setAiMessages(noResultsMsgs);
+        }
         return;
       }
 
@@ -116,23 +127,36 @@ export default function Home() {
           ? `${dimensionCount} search dimension${dimensionCount !== 1 ? "s" : ""} found, but no candidates match all criteria. Try relaxing some filters.`
           : state === "too-broad"
             ? `${dimensionCount} search dimension${dimensionCount !== 1 ? "s" : ""} found, but the search is quite broad (${results.length}+ matches). Consider adding more specific filters.`
-            : `${dimensionCount} search dimension${dimensionCount !== 1 ? "s" : ""} found in your prompt. They've been automatically applied as filters.\n\nYou can edit or remove any filter directly, or tell me what to change.`;
+            : `${dimensionCount} search dimension${dimensionCount !== 1 ? "s" : ""} found. Filters have been updated.\n\nYou can edit or remove any filter directly, or tell me what to change.`;
 
-      setAiMessages([
-        {
-          role: "system",
-          content: `"${q}"`,
-          type: "info",
-        },
-        {
-          role: "assistant",
-          content: extractionMsg,
-          type: "extraction",
-          filters: extracted,
-        },
-      ]);
+      if (isResearch) {
+        setAiMessages((prev) => [
+          ...prev,
+          { role: "user", content: `New search: "${q}"` },
+          {
+            role: "assistant",
+            content: extractionMsg,
+            type: "extraction",
+            filters: extracted,
+          },
+        ]);
+      } else {
+        setAiMessages([
+          {
+            role: "system",
+            content: `"${q}"`,
+            type: "info",
+          },
+          {
+            role: "assistant",
+            content: `${dimensionCount} search dimension${dimensionCount !== 1 ? "s" : ""} found in your prompt. They've been automatically applied as filters.\n\nYou can edit or remove any filter directly, or tell me what to change.`,
+            type: "extraction",
+            filters: extracted,
+          },
+        ]);
+      }
     },
-    [prompt]
+    [prompt, appState]
   );
 
   const handleLocationChange = useCallback((newLocation: string) => {
@@ -151,29 +175,56 @@ export default function Home() {
     (message: string) => {
       setAiMessages((prev) => [...prev, { role: "user", content: message }]);
 
-      const locationConflict = extractLocationFromMessage(message, filters);
+      const locationResult = extractLocationsFromMessage(message, filters);
 
-      if (locationConflict) {
-        setTimeout(() => {
-          setAppState("conflict");
-          setAiMessages((prev) => [
-            ...prev,
-            {
-              role: "assistant",
-              content: "",
-              type: "conflict",
-              conflictData: {
-                title: "Conflicting location",
-                description: `You mentioned **${locationConflict.newLocation}** but you already have a **${locationConflict.conflictsWith}** filter applied.`,
-                options: [
-                  { label: `Include Both`, primary: true },
-                  { label: `Change to ${locationConflict.newLocation}` },
-                  { label: `Keep ${locationConflict.conflictsWith}` },
-                ],
+      if (locationResult) {
+        const { newLocations, existingLocations, isAdditive } = locationResult;
+
+        if (isAdditive) {
+          setTimeout(() => {
+            setFilters((prev) => [
+              ...prev,
+              ...newLocations.map((loc) => ({
+                type: "Location" as const,
+                value: loc,
+                source: "manual" as const,
+              })),
+            ]);
+            const allLocs = [...existingLocations, ...newLocations];
+            setAiMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: `Added **${newLocations.join(", ")}** to your location filters. Now searching across ${allLocs.length} locations: ${allLocs.join(", ")}.`,
+                type: "info",
               },
-            },
-          ]);
-        }, 400);
+            ]);
+          }, 400);
+        } else {
+          setPendingNewLocations(newLocations);
+          setTimeout(() => {
+            setAppState("conflict");
+            const newLocsLabel = newLocations.join(" and ");
+            const existingLabel = existingLocations.join(", ");
+            setAiMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: "",
+                type: "conflict",
+                conflictData: {
+                  title: "Conflicting location",
+                  description: `You mentioned **${newLocsLabel}** but you already have **${existingLabel}** applied.`,
+                  options: [
+                    { label: "Include Both", primary: true },
+                    { label: `Change to ${newLocsLabel}` },
+                    { label: `Keep ${existingLabel}` },
+                  ],
+                },
+              },
+            ]);
+          }, 400);
+        }
       } else {
         const newFilters = extractFilters(message);
         if (newFilters.length > 0) {
@@ -221,30 +272,41 @@ export default function Home() {
 
   const handleConflictResolve = useCallback(
     (option: string) => {
-      const locationConflict = filters.find((f) => f.type === "Location");
-      const currentLoc = locationConflict?.value || "";
+      const existingLocs = filters.filter((f) => f.type === "Location").map((f) => f.value);
 
       if (option.startsWith("Include Both")) {
-        setFilters((prev) => prev.filter((f) => f.type !== "Location"));
+        setFilters((prev) => [
+          ...prev,
+          ...pendingNewLocations.map((loc) => ({
+            type: "Location" as const,
+            value: loc,
+            source: "manual" as const,
+          })),
+        ]);
+        const allLocs = [...existingLocs, ...pendingNewLocations];
         setAiMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            content: `**Location conflict resolved.** Removed the location filter to search across all locations.`,
+            content: `**Location conflict resolved.** Now searching across ${allLocs.length} locations: ${allLocs.join(", ")}.`,
             type: "resolution",
           },
         ]);
         setAppState("results");
       } else if (option.startsWith("Change to")) {
-        const newLoc = option.replace("Change to ", "");
-        setFilters((prev) =>
-          prev.map((f) => (f.type === "Location" ? { ...f, value: newLoc } : f))
-        );
+        setFilters((prev) => [
+          ...prev.filter((f) => f.type !== "Location"),
+          ...pendingNewLocations.map((loc) => ({
+            type: "Location" as const,
+            value: loc,
+            source: "manual" as const,
+          })),
+        ]);
         setAiMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            content: `Location changed to **${newLoc}**.`,
+            content: `Location changed to **${pendingNewLocations.join(", ")}**.`,
             type: "resolution",
           },
         ]);
@@ -254,14 +316,15 @@ export default function Home() {
           ...prev,
           {
             role: "assistant",
-            content: `Keeping **${currentLoc}** as the location filter.`,
+            content: `Keeping **${existingLocs.join(", ")}** as the location filter.`,
             type: "resolution",
           },
         ]);
         setAppState("results");
       }
+      setPendingNewLocations([]);
     },
-    [filters]
+    [filters, pendingNewLocations]
   );
 
   const handleRemoveFilter = useCallback((index: number) => {
@@ -374,6 +437,8 @@ export default function Home() {
                   onRemoveFilterByType={handleRemoveFilterByType}
                   onOpenFilterSidebar={() => setShowFilterSidebar(true)}
                   onRelaxFilter={handleRelaxFilter}
+                  onFilterChange={setFilters}
+                  onPromptChange={setPrompt}
                   selectedLocations={filters.filter((f) => f.type === "Location").map((f) => f.value)}
                 />
               </div>

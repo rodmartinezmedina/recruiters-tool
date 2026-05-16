@@ -11,6 +11,8 @@ interface Props {
   onLocationChange: (location: string) => void;
 }
 
+type SectionKey = "title" | "skills" | "experience" | "location" | "workpref" | "industry" | "languages" | "lastactive";
+
 const ALL_LOCATIONS = [
   { country: "Germany", cities: ["Berlin", "Munich", "Hamburg"] },
   { country: "Spain", cities: ["Madrid", "Barcelona", "Valencia"] },
@@ -45,6 +47,26 @@ const SKILL_OPTIONS = [
   "GraphQL", "Figma", "Swift", "Kotlin", "Terraform",
 ];
 
+const INDUSTRY_OPTIONS = [
+  "Fintech", "E-commerce", "SaaS", "Delivery", "Mobility", "HealthTech",
+  "AdTech", "HR Tech", "EdTech", "Dev Tools", "Design Tools", "AI / ML",
+  "Marketplace", "Travel", "Green Tech", "Payments", "Automation", "Media",
+];
+
+const LANGUAGE_OPTIONS = [
+  "English", "German", "Spanish", "French", "Dutch", "Italian", "Portuguese",
+  "Swedish", "Polish", "Czech", "Romanian", "Danish", "Finnish", "Croatian",
+  "Russian", "Estonian", "Norwegian", "Catalan", "Mandarin", "Hindi",
+];
+
+const LAST_ACTIVE_OPTIONS = [
+  { label: "Any", value: "" },
+  { label: "Last 24 hours", value: "24h" },
+  { label: "Last 7 days", value: "7d" },
+  { label: "Last 30 days", value: "30d" },
+  { label: "Last 90 days", value: "90d" },
+];
+
 export default function FilterSidebar({
   filters,
   onClose,
@@ -54,6 +76,16 @@ export default function FilterSidebar({
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [locationSearch, setLocationSearch] = useState("");
+  const [openSections, setOpenSections] = useState<Set<SectionKey>>(new Set());
+
+  function toggleSection(key: SectionKey) {
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -69,6 +101,9 @@ export default function FilterSidebar({
   const skillFilters = filters.filter((f) => f.type === "Skill");
   const expFilter = filters.find((f) => f.type === "Experience");
   const workFilters = filters.filter((f) => f.type === "Work pref");
+  const industryFilters = filters.filter((f) => f.type === "Industry");
+  const languageFilters = filters.filter((f) => f.type === "Language");
+  const lastActiveFilter = filters.find((f) => f.type === "Last active");
 
   const filteredLocations = locationSearch
     ? ALL_LOCATIONS.map((group) => ({
@@ -109,6 +144,41 @@ export default function FilterSidebar({
     }
   }
 
+  function toggleIndustry(industry: string) {
+    const exists = industryFilters.some((f) => f.value === industry);
+    if (exists) {
+      onFilterChange(filters.filter((f) => !(f.type === "Industry" && f.value === industry)));
+    } else {
+      onFilterChange([...filters, { type: "Industry", value: industry, source: "manual" }]);
+    }
+  }
+
+  function toggleLanguage(language: string) {
+    const exists = languageFilters.some((f) => f.value === language);
+    if (exists) {
+      onFilterChange(filters.filter((f) => !(f.type === "Language" && f.value === language)));
+    } else {
+      onFilterChange([...filters, { type: "Language", value: language, source: "manual" }]);
+    }
+  }
+
+  function setLastActive(value: string) {
+    if (!value) {
+      onFilterChange(filters.filter((f) => f.type !== "Last active"));
+    } else {
+      const has = filters.some((f) => f.type === "Last active");
+      if (has) {
+        onFilterChange(
+          filters.map((f) =>
+            f.type === "Last active" ? { ...f, value, source: "manual" as const } : f
+          )
+        );
+      } else {
+        onFilterChange([...filters, { type: "Last active", value, source: "manual" }]);
+      }
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/10" onClick={onClose} />
@@ -129,206 +199,409 @@ export default function FilterSidebar({
         </div>
 
         {/* Title */}
-        <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-          <span className="text-sm text-text-primary">Title</span>
-          <span className={`text-xs font-medium ${titleFilter ? "text-accent" : "text-text-tertiary"}`}>
-            {titleFilter?.value || "Any"}
-          </span>
+        <div className="border-b border-border">
+          <button
+            onClick={() => toggleSection("title")}
+            className="w-full px-5 py-3 flex items-center justify-between"
+          >
+            <span className="text-sm text-text-primary">Title</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-medium ${titleFilter ? "text-accent" : "text-text-tertiary"}`}>
+                {titleFilter?.value || "Any"}
+              </span>
+              <svg
+                width="12" height="12" viewBox="0 0 12 12"
+                className={`text-text-primary transition-transform ${openSections.has("title") ? "rotate-180" : ""}`}
+              >
+                <path d="M3 5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              </svg>
+            </div>
+          </button>
+          {openSections.has("title") && (
+            <div className="px-5 pb-3">
+              <p className="text-xs text-text-secondary">Title is extracted from your prompt and cannot be manually set here.</p>
+            </div>
+          )}
         </div>
 
         {/* Skills */}
-        <div className="px-5 py-3 border-b border-border">
-          <div className="flex items-center justify-between mb-2">
+        <div className="border-b border-border">
+          <button
+            onClick={() => toggleSection("skills")}
+            className="w-full px-5 py-3 flex items-center justify-between"
+          >
             <span className="text-sm text-text-primary">Skills</span>
-            <span className={`text-xs font-medium ${skillFilters.length > 0 ? "text-accent" : "text-text-tertiary"}`}>
-              {skillFilters.length > 0
-                ? `${skillFilters.length} selected`
-                : "Any"}
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {SKILL_OPTIONS.map((skill) => {
-              const isActive = skillFilters.some((f) => f.value === skill);
-              return (
-                <button
-                  key={skill}
-                  onClick={() => toggleSkill(skill)}
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                    isActive
-                      ? "bg-accent text-white border-accent"
-                      : "bg-white text-text-primary border-border hover:bg-chip-bg"
-                  }`}
-                >
-                  {skill}
-                </button>
-              );
-            })}
-          </div>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-medium ${skillFilters.length > 0 ? "text-accent" : "text-text-tertiary"}`}>
+                {skillFilters.length > 0 ? `${skillFilters.length} selected` : "Any"}
+              </span>
+              <svg
+                width="12" height="12" viewBox="0 0 12 12"
+                className={`text-text-primary transition-transform ${openSections.has("skills") ? "rotate-180" : ""}`}
+              >
+                <path d="M3 5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              </svg>
+            </div>
+          </button>
+          {openSections.has("skills") && (
+            <div className="px-5 pb-3">
+              <div className="flex flex-wrap gap-1.5">
+                {SKILL_OPTIONS.map((skill) => {
+                  const isActive = skillFilters.some((f) => f.value === skill);
+                  return (
+                    <button
+                      key={skill}
+                      onClick={() => toggleSkill(skill)}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                        isActive
+                          ? "bg-accent text-white border-accent"
+                          : "bg-white text-text-primary border-border hover:bg-chip-bg"
+                      }`}
+                    >
+                      {skill}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Experience */}
-        <div className="px-5 py-3 border-b border-border">
-          <div className="flex items-center justify-between mb-2">
+        <div className="border-b border-border">
+          <button
+            onClick={() => toggleSection("experience")}
+            className="w-full px-5 py-3 flex items-center justify-between"
+          >
             <span className="text-sm text-text-primary">Experience</span>
-            <span className={`text-xs font-medium ${expFilter ? "text-accent" : "text-text-tertiary"}`}>
-              {expFilter?.value || "Any"}
-            </span>
-          </div>
-          <div className="space-y-0.5">
-            {EXPERIENCE_OPTIONS.map((opt) => {
-              const isActive = opt.value
-                ? expFilter?.value === opt.value
-                : !expFilter;
-              return (
-                <button
-                  key={opt.label}
-                  onClick={() => setExperience(opt.value)}
-                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors ${
-                    isActive
-                      ? "text-accent font-medium bg-accent-light"
-                      : "text-text-primary hover:bg-chip-bg"
-                  }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                      isActive ? "bg-accent border-accent" : "border-border"
-                    }`}
-                  >
-                    {isActive && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                    )}
-                  </div>
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-medium ${expFilter ? "text-accent" : "text-text-tertiary"}`}>
+                {expFilter?.value || "Any"}
+              </span>
+              <svg
+                width="12" height="12" viewBox="0 0 12 12"
+                className={`text-text-primary transition-transform ${openSections.has("experience") ? "rotate-180" : ""}`}
+              >
+                <path d="M3 5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              </svg>
+            </div>
+          </button>
+          {openSections.has("experience") && (
+            <div className="px-5 pb-3">
+              <div className="space-y-0.5">
+                {EXPERIENCE_OPTIONS.map((opt) => {
+                  const isActive = opt.value
+                    ? expFilter?.value === opt.value
+                    : !expFilter;
+                  return (
+                    <button
+                      key={opt.label}
+                      onClick={() => setExperience(opt.value)}
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors ${
+                        isActive
+                          ? "text-accent font-medium bg-accent-light"
+                          : "text-text-primary hover:bg-chip-bg"
+                      }`}
+                    >
+                      <div
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                          isActive ? "bg-accent border-accent" : "border-border"
+                        }`}
+                      >
+                        {isActive && (
+                          <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                        )}
+                      </div>
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Location */}
-        <div className="px-5 py-3 border-b border-border">
-          <div className="flex items-center justify-between mb-3">
+        <div className="border-b border-border">
+          <button
+            onClick={() => toggleSection("location")}
+            className="w-full px-5 py-3 flex items-center justify-between"
+          >
             <span className="text-sm text-text-primary">Location</span>
-            <span className={`text-xs font-medium ${selectedLocations.length > 0 ? "text-accent" : "text-text-tertiary"}`}>
-              {selectedLocations.length > 0 ? `${selectedLocations.length} selected` : "Any"}
-            </span>
-          </div>
-          <input
-            type="text"
-            placeholder="Search city..."
-            value={locationSearch}
-            onChange={(e) => setLocationSearch(e.target.value)}
-            className="w-full h-8 px-3 mb-2 rounded border border-border text-xs placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent"
-          />
-          <div className="max-h-[200px] overflow-y-auto space-y-0.5">
-            {filteredLocations.map((group) => (
-              <div key={group.country}>
-                <div className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wide px-2 py-1">
-                  {group.country}
-                </div>
-                {group.cities.map((city) => {
-                  const isSelected = selectedLocations.some((l) => l.toLowerCase() === city.toLowerCase());
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-medium ${selectedLocations.length > 0 ? "text-accent" : "text-text-tertiary"}`}>
+                {selectedLocations.length > 0 ? `${selectedLocations.length} selected` : "Any"}
+              </span>
+              <svg
+                width="12" height="12" viewBox="0 0 12 12"
+                className={`text-text-primary transition-transform ${openSections.has("location") ? "rotate-180" : ""}`}
+              >
+                <path d="M3 5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              </svg>
+            </div>
+          </button>
+          {openSections.has("location") && (
+            <div className="px-5 pb-3">
+              <input
+                type="text"
+                placeholder="Search city..."
+                value={locationSearch}
+                onChange={(e) => setLocationSearch(e.target.value)}
+                className="w-full h-8 px-3 mb-2 rounded border border-border text-xs placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+              <div className="max-h-[200px] overflow-y-auto space-y-0.5">
+                {filteredLocations.map((group) => (
+                  <div key={group.country}>
+                    <div className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wide px-2 py-1">
+                      {group.country}
+                    </div>
+                    {group.cities.map((city) => {
+                      const isSelected = selectedLocations.some((l) => l.toLowerCase() === city.toLowerCase());
+                      return (
+                        <button
+                          key={city}
+                          onClick={() => onLocationChange(city)}
+                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors ${
+                            isSelected
+                              ? "text-accent font-medium bg-accent-light"
+                              : "text-text-primary hover:bg-chip-bg"
+                          }`}
+                        >
+                          <div
+                            className={`w-4 h-4 rounded border flex items-center justify-center ${
+                              isSelected
+                                ? "bg-accent border-accent"
+                                : "border-border"
+                            }`}
+                          >
+                            {isSelected && (
+                              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                <path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                              </svg>
+                            )}
+                          </div>
+                          {city}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Work Arrangement */}
+        <div className="border-b border-border">
+          <button
+            onClick={() => toggleSection("workpref")}
+            className="w-full px-5 py-3 flex items-center justify-between"
+          >
+            <span className="text-sm text-text-primary">Work Arrangement</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-medium ${workFilters.length > 0 ? "text-accent" : "text-text-tertiary"}`}>
+                {workFilters.length > 0 ? `${workFilters.length} selected` : "Any"}
+              </span>
+              <svg
+                width="12" height="12" viewBox="0 0 12 12"
+                className={`text-text-primary transition-transform ${openSections.has("workpref") ? "rotate-180" : ""}`}
+              >
+                <path d="M3 5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              </svg>
+            </div>
+          </button>
+          {openSections.has("workpref") && (
+            <div className="px-5 pb-3">
+              <div className="space-y-0.5">
+                {WORK_PREFS.map((pref) => {
+                  const isActive = workFilters.some((f) => f.value === pref);
                   return (
                     <button
-                      key={city}
-                      onClick={() => onLocationChange(city)}
+                      key={pref}
+                      onClick={() => {
+                        if (isActive) {
+                          onFilterChange(filters.filter((f) => !(f.type === "Work pref" && f.value === pref)));
+                        } else {
+                          onFilterChange([...filters, { type: "Work pref", value: pref, source: "manual" }]);
+                        }
+                      }}
                       className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors ${
-                        isSelected
+                        isActive
                           ? "text-accent font-medium bg-accent-light"
                           : "text-text-primary hover:bg-chip-bg"
                       }`}
                     >
                       <div
                         className={`w-4 h-4 rounded border flex items-center justify-center ${
-                          isSelected
+                          isActive
                             ? "bg-accent border-accent"
                             : "border-border"
                         }`}
                       >
-                        {isSelected && (
+                        {isActive && (
                           <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                             <path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
                           </svg>
                         )}
                       </div>
-                      {city}
+                      {pref}
                     </button>
                   );
                 })}
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Work Arrangement */}
-        <div className="px-5 py-3 border-b border-border">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-text-primary">Work Arrangement</span>
-            <span className={`text-xs font-medium ${workFilters.length > 0 ? "text-accent" : "text-text-tertiary"}`}>
-              {workFilters.length > 0 ? `${workFilters.length} selected` : "Any"}
-            </span>
-          </div>
-          <div className="space-y-0.5">
-            {WORK_PREFS.map((pref) => {
-              const isActive = workFilters.some((f) => f.value === pref);
-              return (
-                <button
-                  key={pref}
-                  onClick={() => {
-                    if (isActive) {
-                      onFilterChange(filters.filter((f) => !(f.type === "Work pref" && f.value === pref)));
-                    } else {
-                      onFilterChange([...filters, { type: "Work pref", value: pref, source: "manual" }]);
-                    }
-                  }}
-                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors ${
-                    isActive
-                      ? "text-accent font-medium bg-accent-light"
-                      : "text-text-primary hover:bg-chip-bg"
-                  }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded border flex items-center justify-center ${
-                      isActive
-                        ? "bg-accent border-accent"
-                        : "border-border"
-                    }`}
-                  >
-                    {isActive && (
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                        <path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-                      </svg>
-                    )}
-                  </div>
-                  {pref}
-                </button>
-              );
-            })}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Industry */}
-        <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-          <span className="text-sm text-text-primary">Industry</span>
-          <svg width="12" height="12" viewBox="0 0 12 12" className="text-text-tertiary">
-            <path d="M3 5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" fill="none" />
-          </svg>
+        <div className="border-b border-border">
+          <button
+            onClick={() => toggleSection("industry")}
+            className="w-full px-5 py-3 flex items-center justify-between"
+          >
+            <span className="text-sm text-text-primary">Industry</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-medium ${industryFilters.length > 0 ? "text-accent" : "text-text-tertiary"}`}>
+                {industryFilters.length > 0 ? `${industryFilters.length} selected` : "Any"}
+              </span>
+              <svg
+                width="12" height="12" viewBox="0 0 12 12"
+                className={`text-text-primary transition-transform ${openSections.has("industry") ? "rotate-180" : ""}`}
+              >
+                <path d="M3 5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              </svg>
+            </div>
+          </button>
+          {openSections.has("industry") && (
+            <div className="px-5 pb-3">
+              <div className="flex flex-wrap gap-1.5">
+                {INDUSTRY_OPTIONS.map((industry) => {
+                  const isActive = industryFilters.some((f) => f.value === industry);
+                  return (
+                    <button
+                      key={industry}
+                      onClick={() => toggleIndustry(industry)}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                        isActive
+                          ? "bg-accent text-white border-accent"
+                          : "bg-white text-text-primary border-border hover:bg-chip-bg"
+                      }`}
+                    >
+                      {industry}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Languages */}
-        <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-          <span className="text-sm text-text-primary">Languages</span>
-          <svg width="12" height="12" viewBox="0 0 12 12" className="text-text-tertiary">
-            <path d="M3 5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" fill="none" />
-          </svg>
+        <div className="border-b border-border">
+          <button
+            onClick={() => toggleSection("languages")}
+            className="w-full px-5 py-3 flex items-center justify-between"
+          >
+            <span className="text-sm text-text-primary">Languages</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-medium ${languageFilters.length > 0 ? "text-accent" : "text-text-tertiary"}`}>
+                {languageFilters.length > 0 ? `${languageFilters.length} selected` : "Any"}
+              </span>
+              <svg
+                width="12" height="12" viewBox="0 0 12 12"
+                className={`text-text-primary transition-transform ${openSections.has("languages") ? "rotate-180" : ""}`}
+              >
+                <path d="M3 5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              </svg>
+            </div>
+          </button>
+          {openSections.has("languages") && (
+            <div className="px-5 pb-3">
+              <div className="space-y-0.5">
+                {LANGUAGE_OPTIONS.map((lang) => {
+                  const isActive = languageFilters.some((f) => f.value === lang);
+                  return (
+                    <button
+                      key={lang}
+                      onClick={() => toggleLanguage(lang)}
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors ${
+                        isActive
+                          ? "text-accent font-medium bg-accent-light"
+                          : "text-text-primary hover:bg-chip-bg"
+                      }`}
+                    >
+                      <div
+                        className={`w-4 h-4 rounded border flex items-center justify-center ${
+                          isActive ? "bg-accent border-accent" : "border-border"
+                        }`}
+                      >
+                        {isActive && (
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                            <path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                          </svg>
+                        )}
+                      </div>
+                      {lang}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Last active */}
-        <div className="px-5 py-3 flex items-center justify-between">
-          <span className="text-sm text-text-primary">Last active</span>
-          <svg width="12" height="12" viewBox="0 0 12 12" className="text-text-tertiary">
-            <path d="M3 5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" fill="none" />
-          </svg>
+        <div>
+          <button
+            onClick={() => toggleSection("lastactive")}
+            className="w-full px-5 py-3 flex items-center justify-between"
+          >
+            <span className="text-sm text-text-primary">Last active</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-medium ${lastActiveFilter ? "text-accent" : "text-text-tertiary"}`}>
+                {lastActiveFilter ? LAST_ACTIVE_OPTIONS.find((o) => o.value === lastActiveFilter.value)?.label || lastActiveFilter.value : "Any"}
+              </span>
+              <svg
+                width="12" height="12" viewBox="0 0 12 12"
+                className={`text-text-primary transition-transform ${openSections.has("lastactive") ? "rotate-180" : ""}`}
+              >
+                <path d="M3 5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              </svg>
+            </div>
+          </button>
+          {openSections.has("lastactive") && (
+            <div className="px-5 pb-3">
+              <div className="space-y-0.5">
+                {LAST_ACTIVE_OPTIONS.map((opt) => {
+                  const isActive = opt.value
+                    ? lastActiveFilter?.value === opt.value
+                    : !lastActiveFilter;
+                  return (
+                    <button
+                      key={opt.label}
+                      onClick={() => setLastActive(opt.value)}
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors ${
+                        isActive
+                          ? "text-accent font-medium bg-accent-light"
+                          : "text-text-primary hover:bg-chip-bg"
+                      }`}
+                    >
+                      <div
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                          isActive ? "bg-accent border-accent" : "border-border"
+                        }`}
+                      >
+                        {isActive && (
+                          <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                        )}
+                      </div>
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

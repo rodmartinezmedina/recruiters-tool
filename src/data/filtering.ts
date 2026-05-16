@@ -11,6 +11,11 @@ function normalizeSkill(skill: string): string {
   return skill.toLowerCase().replace(/[.\-\s]/g, "");
 }
 
+const TITLE_GENERIC_WORDS = new Set([
+  "senior", "junior", "lead", "staff", "principal", "head",
+  "engineer", "developer", "specialist", "architect", "manager",
+]);
+
 function titleMatch(candidateTitle: string, filterTitle: string): "full" | "partial" | "none" {
   const ct = candidateTitle.toLowerCase();
   const ft = filterTitle.toLowerCase();
@@ -19,6 +24,17 @@ function titleMatch(candidateTitle: string, filterTitle: string): "full" | "part
 
   const ctWords = ct.split(/\s+/);
   const ftWords = ft.split(/\s+/);
+
+  const coreCt = ctWords.filter((w) => !TITLE_GENERIC_WORDS.has(w));
+  const coreFt = ftWords.filter((w) => !TITLE_GENERIC_WORDS.has(w));
+
+  if (coreFt.length > 0) {
+    const coreOverlap = coreFt.filter((w) =>
+      coreCt.some((cw) => cw.includes(w) || w.includes(cw))
+    );
+    if (coreOverlap.length === 0) return "none";
+  }
+
   const overlap = ftWords.filter((w) => ctWords.some((cw) => cw.includes(w) || w.includes(cw)));
   if (overlap.length >= Math.ceil(ftWords.length * 0.5)) return "partial";
 
@@ -75,35 +91,23 @@ export function filterAndScore(
       }
     }
 
-    // Location matching (15 points)
+    // Location matching (15 points) - hard filter: exclude non-matching candidates
     if (locationFilters.length > 0) {
       maxScore += 15;
-      let locationMatched = false;
+      let locationScore = 0;
       for (const lf of locationFilters) {
         const loc = lf.value.toLowerCase();
         if (
           candidate.city.toLowerCase() === loc ||
           candidate.country.toLowerCase() === loc
         ) {
-          score += 15;
+          locationScore = 15;
           tags.push({ label: candidate.city, source: lf.source === "manual" ? "filter" : "prompt" });
-          locationMatched = true;
           break;
         }
       }
-      if (!locationMatched) {
-        for (const lf of locationFilters) {
-          const loc = lf.value.toLowerCase();
-          if (
-            candidate.city.toLowerCase().includes(loc) ||
-            candidate.country.toLowerCase().includes(loc)
-          ) {
-            score += 10;
-            tags.push({ label: candidate.city, source: "partial" });
-            break;
-          }
-        }
-      }
+      if (locationScore === 0) continue;
+      score += locationScore;
     }
 
     // Experience matching (10 points)
