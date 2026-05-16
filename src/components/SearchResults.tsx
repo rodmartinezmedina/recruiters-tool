@@ -148,8 +148,8 @@ export default function SearchResults({
                   </span>
                 </>
               )}
-              <svg width="10" height="10" viewBox="0 0 10 10" className="ml-0.5 opacity-50">
-                <path d="M3 4l2 2 2-2" stroke="currentColor" strokeWidth="1.2" fill="none" />
+              <svg width="12" height="12" viewBox="0 0 12 12" className="ml-0.5 text-text-primary">
+                <path d="M3.5 5l2.5 2.5 2.5-2.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" />
               </svg>
             </div>
             {g.type === "Location" && showGeoDropdown && (
