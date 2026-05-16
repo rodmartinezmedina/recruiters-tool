@@ -26,7 +26,7 @@ export default function StartState({ prompt, setPrompt, onSearch, inputRef }: Pr
         Describe who you&apos;re looking for in plain language.
       </p>
 
-      <div className="w-full max-w-[680px]">
+      <div className="w-full max-w-[920px]">
         <form
           onSubmit={(e) => {
             e.preventDefault();

@@ -180,8 +180,16 @@ export default function SearchResults({
       const titleFilter = filters.find((f) => f.type === "Title");
       return (
         <div className="absolute top-full left-0 mt-1 w-[260px] bg-white rounded-lg border border-border shadow-lg z-50">
-          <div className="px-4 py-2 text-xs text-text-secondary border-b border-border">
-            Select title
+          <div className="px-4 py-2 text-xs text-text-secondary border-b border-border flex items-center justify-between">
+            <span>{titleFilter ? "1 selected" : "Select title"}</span>
+            {titleFilter && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setTitle(""); }}
+                className="text-accent hover:underline font-medium transition-colors"
+              >
+                Clear
+              </button>
+            )}
           </div>
           <div className="p-2 space-y-0.5">
             <button
@@ -225,9 +233,14 @@ export default function SearchResults({
       return (
         <div className="absolute top-full left-0 mt-1 w-[320px] bg-white rounded-lg border border-border shadow-lg z-50 max-h-[400px] overflow-y-auto">
           <div className="px-4 py-2 text-xs text-text-secondary border-b border-border flex items-center justify-between">
-            <span>Select skills</span>
+            <span>{skillFilters.length > 0 ? `${skillFilters.length} selected` : "Select skills"}</span>
             {skillFilters.length > 0 && (
-              <span className="text-accent font-medium">{skillFilters.length} selected</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); onFilterChange(filters.filter((f) => f.type !== "Skill")); }}
+                className="text-accent hover:underline font-medium transition-colors"
+              >
+                Clear
+              </button>
             )}
           </div>
           <div className="p-3 flex flex-wrap gap-1.5">
@@ -255,8 +268,16 @@ export default function SearchResults({
     if (type === "Experience") {
       return (
         <div className="absolute top-full left-0 mt-1 w-[240px] bg-white rounded-lg border border-border shadow-lg z-50">
-          <div className="px-4 py-2 text-xs text-text-secondary border-b border-border">
-            Select experience
+          <div className="px-4 py-2 text-xs text-text-secondary border-b border-border flex items-center justify-between">
+            <span>{expFilter ? "1 selected" : "Select experience"}</span>
+            {expFilter && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setExperience(""); }}
+                className="text-accent hover:underline font-medium transition-colors"
+              >
+                Clear
+              </button>
+            )}
           </div>
           <div className="p-2 space-y-0.5">
             {EXPERIENCE_OPTIONS.map((opt) => {
@@ -295,9 +316,14 @@ export default function SearchResults({
       return (
         <div className="absolute top-full left-0 mt-1 w-[240px] bg-white rounded-lg border border-border shadow-lg z-50">
           <div className="px-4 py-2 text-xs text-text-secondary border-b border-border flex items-center justify-between">
-            <span>Work arrangement</span>
+            <span>{workFilters.length > 0 ? `${workFilters.length} selected` : "Work arrangement"}</span>
             {workFilters.length > 0 && (
-              <span className="text-accent font-medium">{workFilters.length} selected</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); onFilterChange(filters.filter((f) => f.type !== "Work pref")); }}
+                className="text-accent hover:underline font-medium transition-colors"
+              >
+                Clear
+              </button>
             )}
           </div>
           <div className="p-2 space-y-0.5">
@@ -347,7 +373,7 @@ export default function SearchResults({
   }
 
   return (
-    <div className="max-w-[780px]">
+    <div className="max-w-[920px] mx-auto">
       {/* Search bar */}
       <div className="mb-1">
         <label className="text-xs font-medium text-text-tertiary mb-1.5 block">

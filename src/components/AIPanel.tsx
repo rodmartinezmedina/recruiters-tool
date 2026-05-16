@@ -44,7 +44,7 @@ export default function AIPanel({
   };
 
   return (
-    <div className="w-[340px] bg-white border-l border-border flex flex-col shrink-0 h-full">
+    <div className="w-[300px] bg-white border-l border-border flex flex-col shrink-0 h-full">
       {/* Header */}
       <div className="px-5 py-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">

@@ -63,9 +63,22 @@ export default function GeoDropdown({ selectedLocations, onToggle, onClose }: Pr
       className="absolute top-full left-0 mt-1 w-[320px] bg-white rounded-lg border border-border shadow-lg z-50 max-h-[400px] overflow-y-auto"
     >
       <div className="px-4 py-2 text-xs text-text-secondary border-b border-border flex items-center justify-between">
-        <span>Select locations</span>
+        <span>
+          {selectedLocations.length > 0
+            ? `${selectedLocations.length} selected`
+            : "Select locations"}
+        </span>
         {selectedLocations.length > 0 && (
-          <span className="text-accent font-medium">{selectedLocations.length} selected</span>
+          <button
+            onClick={() => {
+              for (const loc of selectedLocations) {
+                onToggle(loc);
+              }
+            }}
+            className="text-accent hover:underline font-medium transition-colors"
+          >
+            Clear
+          </button>
         )}
       </div>
       <div className="py-1">

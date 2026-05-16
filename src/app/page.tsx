@@ -473,10 +473,8 @@ export default function Home() {
             <FilterSidebar
               filters={filters}
               onClose={() => setShowFilterSidebar(false)}
-              onFilterChange={(newFilters) => {
-                setFilters(newFilters);
-                setShowFilterSidebar(false);
-              }}
+              onFilterChange={setFilters}
+              onClearAll={handleClearFilters}
               selectedLocations={filters.filter((f) => f.type === "Location").map((f) => f.value)}
               onLocationChange={(loc) => {
                 handleLocationChange(loc);

@@ -7,6 +7,7 @@ interface Props {
   filters: Filter[];
   onClose: () => void;
   onFilterChange: (filters: Filter[]) => void;
+  onClearAll: () => void;
   selectedLocations: string[];
   onLocationChange: (location: string) => void;
 }
@@ -41,6 +42,12 @@ const EXPERIENCE_OPTIONS = [
   { label: "10+ years", value: "+10 years" },
 ];
 
+const TITLE_OPTIONS = [
+  "Backend Engineer", "Frontend Engineer", "Fullstack Engineer",
+  "DevOps Engineer", "Data Engineer", "ML Engineer",
+  "Mobile Engineer", "Product Designer", "Product Manager",
+];
+
 const SKILL_OPTIONS = [
   "Python", "JavaScript", "TypeScript", "Java", "Go", "Rust", "React", "Vue",
   "Angular", "Node.js", "Django", "Kubernetes", "Docker", "AWS", "PostgreSQL",
@@ -71,12 +78,14 @@ export default function FilterSidebar({
   filters,
   onClose,
   onFilterChange,
+  onClearAll,
   selectedLocations,
   onLocationChange,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [locationSearch, setLocationSearch] = useState("");
   const [openSections, setOpenSections] = useState<Set<SectionKey>>(new Set());
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   function toggleSection(key: SectionKey) {
     setOpenSections((prev) => {
@@ -117,6 +126,23 @@ export default function FilterSidebar({
           group.country.toLowerCase().includes(locationSearch.toLowerCase())
       )
     : ALL_LOCATIONS;
+
+  function setTitle(value: string) {
+    if (!value) {
+      onFilterChange(filters.filter((f) => f.type !== "Title"));
+    } else {
+      const has = filters.some((f) => f.type === "Title");
+      if (has) {
+        onFilterChange(
+          filters.map((f) =>
+            f.type === "Title" ? { ...f, value, source: "manual" as const } : f
+          )
+        );
+      } else {
+        onFilterChange([...filters, { type: "Title", value, source: "manual" }]);
+      }
+    }
+  }
 
   function toggleSkill(skill: string) {
     const exists = skillFilters.some((f) => f.value === skill);
@@ -186,12 +212,35 @@ export default function FilterSidebar({
         ref={ref}
         className="absolute right-0 top-0 bottom-0 w-[340px] bg-white border-l border-border overflow-y-auto"
       >
+        {showClearConfirm && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/20" onClick={() => setShowClearConfirm(false)} />
+            <div className="relative bg-white rounded-lg border border-border shadow-xl p-5 w-[320px]">
+              <p className="text-sm font-semibold text-text-primary mb-1">Clear all filters?</p>
+              <p className="text-xs text-text-secondary mb-4">This will remove all filters and return to the start screen.</p>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowClearConfirm(false)}
+                  className="px-4 py-1.5 rounded-md text-sm font-medium text-text-primary border border-border hover:bg-chip-bg transition-colors"
+                >
+                  No
+                </button>
+                <button
+                  onClick={() => { setShowClearConfirm(false); onClose(); onClearAll(); }}
+                  className="px-4 py-1.5 rounded-md text-sm font-medium text-white bg-accent hover:bg-accent/90 transition-colors"
+                >
+                  Yes
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="px-5 py-4 flex items-center justify-between border-b border-border">
           <span className="text-xs font-semibold text-text-tertiary tracking-wide uppercase">
             Filters
           </span>
           <button
-            onClick={() => onFilterChange([])}
+            onClick={() => setShowClearConfirm(true)}
             className="text-xs font-medium text-accent hover:underline"
           >
             Clear all
@@ -219,7 +268,40 @@ export default function FilterSidebar({
           </button>
           {openSections.has("title") && (
             <div className="px-5 pb-3">
-              <p className="text-xs text-text-secondary">Title is extracted from your prompt and cannot be manually set here.</p>
+              <div className="space-y-0.5">
+                <button
+                  onClick={() => setTitle("")}
+                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors ${
+                    !titleFilter
+                      ? "text-accent font-medium bg-accent-light"
+                      : "text-text-primary hover:bg-chip-bg"
+                  }`}
+                >
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${!titleFilter ? "bg-accent border-accent" : "border-border"}`}>
+                    {!titleFilter && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                  Any
+                </button>
+                {TITLE_OPTIONS.map((title) => {
+                  const isActive = titleFilter?.value === title;
+                  return (
+                    <button
+                      key={title}
+                      onClick={() => setTitle(title)}
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors ${
+                        isActive
+                          ? "text-accent font-medium bg-accent-light"
+                          : "text-text-primary hover:bg-chip-bg"
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isActive ? "bg-accent border-accent" : "border-border"}`}>
+                        {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                      {title}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
