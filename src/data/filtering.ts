@@ -35,7 +35,7 @@ export function filterAndScore(
   const skillFilters = filters.filter((f) => f.type === "Skill");
   const locationFilters = filters.filter((f) => f.type === "Location");
   const expFilter = filters.find((f) => f.type === "Experience");
-  const workFilter = filters.find((f) => f.type === "Work pref");
+  const workFilters = filters.filter((f) => f.type === "Work pref");
 
   const expThreshold = expFilter
     ? parseInt(expFilter.value.replace(/[^0-9]/g, ""), 10) || 0
@@ -123,19 +123,28 @@ export function filterAndScore(
     }
 
     // Work pref matching (10 points)
-    if (workFilter) {
+    if (workFilters.length > 0) {
       maxScore += 10;
-      const wp = workFilter.value.toLowerCase();
       const cp = candidate.workPref.toLowerCase();
-      if (cp.includes(wp.split(" ")[0]) || wp.includes(cp.split(" ")[0])) {
-        score += 10;
-        tags.push({
-          label: candidate.workPref,
-          source: workFilter.source === "manual" ? "filter" : "prompt",
-        });
-      } else if (wp.includes("remote") && cp.includes("hybrid")) {
-        score += 5;
-        tags.push({ label: candidate.workPref, source: "partial" });
+      let workMatched = false;
+      for (const wf of workFilters) {
+        const wp = wf.value.toLowerCase();
+        if (cp.includes(wp.split(" ")[0]) || wp.includes(cp.split(" ")[0])) {
+          score += 10;
+          tags.push({
+            label: candidate.workPref,
+            source: wf.source === "manual" ? "filter" : "prompt",
+          });
+          workMatched = true;
+          break;
+        }
+      }
+      if (!workMatched) {
+        const hasRemote = workFilters.some((wf) => wf.value.toLowerCase().includes("remote"));
+        if (hasRemote && cp.includes("hybrid")) {
+          score += 5;
+          tags.push({ label: candidate.workPref, source: "partial" });
+        }
       }
     }
 

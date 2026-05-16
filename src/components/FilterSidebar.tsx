@@ -68,7 +68,7 @@ export default function FilterSidebar({
   const titleFilter = filters.find((f) => f.type === "Title");
   const skillFilters = filters.filter((f) => f.type === "Skill");
   const expFilter = filters.find((f) => f.type === "Experience");
-  const workFilter = filters.find((f) => f.type === "Work pref");
+  const workFilters = filters.filter((f) => f.type === "Work pref");
 
   const filteredLocations = locationSearch
     ? ALL_LOCATIONS.map((group) => ({
@@ -264,31 +264,21 @@ export default function FilterSidebar({
         <div className="px-5 py-3 border-b border-border">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-text-primary">Work Arrangement</span>
-            <span className={`text-xs font-medium ${workFilter ? "text-accent" : "text-text-tertiary"}`}>
-              {workFilter?.value || "Any"}
+            <span className={`text-xs font-medium ${workFilters.length > 0 ? "text-accent" : "text-text-tertiary"}`}>
+              {workFilters.length > 0 ? `${workFilters.length} selected` : "Any"}
             </span>
           </div>
           <div className="space-y-0.5">
             {WORK_PREFS.map((pref) => {
-              const isActive = workFilter?.value === pref;
+              const isActive = workFilters.some((f) => f.value === pref);
               return (
                 <button
                   key={pref}
                   onClick={() => {
-                    const hasWorkFilter = filters.some((f) => f.type === "Work pref");
-                    if (hasWorkFilter) {
-                      onFilterChange(
-                        filters.map((f) =>
-                          f.type === "Work pref"
-                            ? { ...f, value: pref, source: "manual" }
-                            : f
-                        )
-                      );
+                    if (isActive) {
+                      onFilterChange(filters.filter((f) => !(f.type === "Work pref" && f.value === pref)));
                     } else {
-                      onFilterChange([
-                        ...filters,
-                        { type: "Work pref", value: pref, source: "manual" },
-                      ]);
+                      onFilterChange([...filters, { type: "Work pref", value: pref, source: "manual" }]);
                     }
                   }}
                   className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors ${

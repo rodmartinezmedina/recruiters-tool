@@ -73,7 +73,7 @@ export default function SearchResults({
         type,
         label: typeLabels[type] || type,
         values: matching.map((f) => f.value),
-        fromPrompt: matching.some((f) => f.source === "prompt"),
+        fromPrompt: matching.every((f) => f.source === "prompt"),
         indices: matching.map((f) => f.index),
       });
     }
@@ -142,7 +142,7 @@ export default function SearchResults({
                 g.values[0]
               ) : (
                 <>
-                  {g.values[0]}
+                  {g.label}
                   <span className="ml-0.5 min-w-[18px] h-[18px] rounded bg-accent/10 text-accent text-[10px] flex items-center justify-center font-semibold px-1">
                     {g.values.length}
                   </span>
