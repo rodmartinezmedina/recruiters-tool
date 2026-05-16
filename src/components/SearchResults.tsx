@@ -154,22 +154,34 @@ export default function SearchResults({
           </p>
           <div className="flex flex-wrap gap-2">
             {!filters.some((f) => f.type === "Skill") && (
-              <button className="px-3 py-1.5 rounded-full border border-accent text-xs font-medium text-accent hover:bg-white transition-colors">
+              <button
+                onClick={onOpenFilterSidebar}
+                className="px-3 py-1.5 rounded-full border border-accent text-xs font-medium text-accent hover:bg-white transition-colors"
+              >
                 + Specific skills
               </button>
             )}
             {!filters.some((f) => f.type === "Experience") && (
-              <button className="px-3 py-1.5 rounded-full border border-accent text-xs font-medium text-accent hover:bg-white transition-colors">
+              <button
+                onClick={onOpenFilterSidebar}
+                className="px-3 py-1.5 rounded-full border border-accent text-xs font-medium text-accent hover:bg-white transition-colors"
+              >
                 + Years of experience
               </button>
             )}
             {!filters.some((f) => f.type === "Location") && (
-              <button className="px-3 py-1.5 rounded-full border border-accent text-xs font-medium text-accent hover:bg-white transition-colors">
+              <button
+                onClick={onOpenFilterSidebar}
+                className="px-3 py-1.5 rounded-full border border-accent text-xs font-medium text-accent hover:bg-white transition-colors"
+              >
                 + Location
               </button>
             )}
             {!filters.some((f) => f.type === "Work pref") && (
-              <button className="px-3 py-1.5 rounded-full border border-accent text-xs font-medium text-accent hover:bg-white transition-colors">
+              <button
+                onClick={onOpenFilterSidebar}
+                className="px-3 py-1.5 rounded-full border border-accent text-xs font-medium text-accent hover:bg-white transition-colors"
+              >
                 + Work preference
               </button>
             )}

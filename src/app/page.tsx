@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { candidates as allCandidates, Candidate } from "@/data/candidates";
 import { extractFilters, extractLocationFromMessage } from "@/data/extraction";
 import { filterAndScore } from "@/data/filtering";
@@ -51,6 +51,19 @@ export default function Home() {
     if (appState === "start") return [];
     return filterAndScore(allCandidates, filters);
   }, [appState, filters]);
+
+  useEffect(() => {
+    if (appState === "start" || appState === "conflict") return;
+    if (filters.length === 0) return;
+    const count = filteredCandidates.length;
+    if (count === 0 && appState !== "zero-results") {
+      setAppState("zero-results");
+    } else if (count >= TOO_BROAD_THRESHOLD && appState !== "too-broad") {
+      setAppState("too-broad");
+    } else if (count > 0 && count < TOO_BROAD_THRESHOLD && appState !== "results") {
+      setAppState("results");
+    }
+  }, [filteredCandidates, filters, appState]);
 
   const handleSearch = useCallback(
     (searchPrompt?: string) => {
