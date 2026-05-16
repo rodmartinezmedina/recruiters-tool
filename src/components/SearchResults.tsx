@@ -80,11 +80,11 @@ export default function SearchResults({
       <div className="flex flex-wrap items-center gap-2 mt-3 mb-1">
         {filters.map((f, i) => (
           <div key={`${f.type}-${f.value}-${i}`} className="relative">
-            <button
+            <div
               onClick={() => {
                 if (f.type === "Location") setShowGeoDropdown(!showGeoDropdown);
               }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
                 f.source === "prompt"
                   ? "bg-white border-accent-border text-accent"
                   : "bg-white border-border text-text-primary"
@@ -103,7 +103,7 @@ export default function SearchResults({
               >
                 &times;
               </button>
-            </button>
+            </div>
             {f.type === "Location" && showGeoDropdown && (
               <GeoDropdown
                 currentLocation={locationFilter}
