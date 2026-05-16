@@ -127,36 +127,30 @@ export default function SearchResults({
             <div
               onClick={() => {
                 if (g.type === "Location") setShowGeoDropdown(!showGeoDropdown);
+                else onOpenFilterSidebar();
               }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[13px] font-medium border transition-colors cursor-pointer ${
                 g.fromPrompt
-                  ? "bg-white border-accent-border text-accent"
+                  ? "bg-white border-accent-border text-text-primary"
                   : "bg-white border-border text-text-primary"
               }`}
             >
               {g.fromPrompt && (
-                <span className="text-purple">&#10022;</span>
+                <span className="text-purple text-xs">&#10022;</span>
               )}
-              <span className="text-text-tertiary">{g.label}:</span>
               {g.values.length === 1 ? (
-                <span className="font-semibold">{g.values[0]}</span>
+                g.values[0]
               ) : (
                 <>
-                  <span className="font-semibold">{g.values[0]}</span>
-                  <span className="ml-0.5 w-5 h-5 rounded-full bg-accent/10 text-accent text-[10px] flex items-center justify-center font-semibold">
+                  {g.values[0]}
+                  <span className="ml-0.5 min-w-[18px] h-[18px] rounded bg-accent/10 text-accent text-[10px] flex items-center justify-center font-semibold px-1">
                     {g.values.length}
                   </span>
                 </>
               )}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemoveFilterByType(g.type);
-                }}
-                className="ml-0.5 opacity-60 hover:opacity-100"
-              >
-                &times;
-              </button>
+              <svg width="10" height="10" viewBox="0 0 10 10" className="ml-0.5 opacity-50">
+                <path d="M3 4l2 2 2-2" stroke="currentColor" strokeWidth="1.2" fill="none" />
+              </svg>
             </div>
             {g.type === "Location" && showGeoDropdown && (
               <GeoDropdown
