@@ -287,6 +287,19 @@ export default function Home() {
     });
   }, []);
 
+  const handleRemoveFilterByType = useCallback((type: string) => {
+    setFilters((prev) => {
+      const updated = prev.filter((f) => f.type !== type);
+      if (updated.length === 0) {
+        setAppState("start");
+        setPrompt("");
+        setAiMessages([]);
+        return updated;
+      }
+      return updated;
+    });
+  }, []);
+
   const handleRelaxFilter = useCallback(
     (filterType?: string) => {
       if (filterType) {
@@ -368,6 +381,7 @@ export default function Home() {
                   onLocationChange={handleLocationChange}
                   onClearFilters={handleClearFilters}
                   onRemoveFilter={handleRemoveFilter}
+                  onRemoveFilterByType={handleRemoveFilterByType}
                   onOpenFilterSidebar={() => setShowFilterSidebar(true)}
                   onRelaxFilter={handleRelaxFilter}
                   locationFilter={filters.find((f) => f.type === "Location")?.value || ""}

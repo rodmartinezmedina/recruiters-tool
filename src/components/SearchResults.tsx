@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Candidate } from "@/data/candidates";
 import { AppState, Filter } from "@/app/page";
 import CandidateCard from "./CandidateCard";
@@ -18,9 +18,18 @@ interface Props {
   onLocationChange: (location: string) => void;
   onClearFilters: () => void;
   onRemoveFilter: (index: number) => void;
+  onRemoveFilterByType: (type: string) => void;
   onOpenFilterSidebar: () => void;
   onRelaxFilter: (filterType?: string) => void;
   locationFilter: string;
+}
+
+interface GroupedFilter {
+  type: string;
+  label: string;
+  values: string[];
+  fromPrompt: boolean;
+  indices: number[];
 }
 
 export default function SearchResults({
@@ -35,17 +44,52 @@ export default function SearchResults({
   onLocationChange,
   onClearFilters,
   onRemoveFilter,
+  onRemoveFilterByType,
   onOpenFilterSidebar,
   onRelaxFilter,
   locationFilter,
 }: Props) {
   const [showGeoDropdown, setShowGeoDropdown] = useState(false);
-  const filterCount = filters.filter((f) => f.source === "prompt").length;
+  const promptFilterCount = filters.filter((f) => f.source === "prompt").length;
 
-  const relaxationChips = filters.map((f) => ({
-    label: `Remove: ${f.value}`,
-    type: f.type,
-  }));
+  const grouped = useMemo(() => {
+    const groups: GroupedFilter[] = [];
+    const typeOrder = ["Title", "Skill", "Location", "Experience", "Work pref"];
+    const typeLabels: Record<string, string> = {
+      Title: "Title",
+      Skill: "Skills",
+      Location: "Location",
+      Experience: "Experience",
+      "Work pref": "Work pref",
+    };
+
+    for (const type of typeOrder) {
+      const matching = filters
+        .map((f, i) => ({ ...f, index: i }))
+        .filter((f) => f.type === type);
+      if (matching.length === 0) continue;
+
+      groups.push({
+        type,
+        label: typeLabels[type] || type,
+        values: matching.map((f) => f.value),
+        fromPrompt: matching.some((f) => f.source === "prompt"),
+        indices: matching.map((f) => f.index),
+      });
+    }
+    return groups;
+  }, [filters]);
+
+  const relaxationChips = useMemo(() => {
+    const types = new Set(filters.map((f) => f.type));
+    return Array.from(types).map((type) => {
+      const values = filters.filter((f) => f.type === type).map((f) => f.value);
+      return {
+        label: `Remove: ${values.join(", ")}`,
+        type,
+      };
+    });
+  }, [filters]);
 
   return (
     <div className="max-w-[780px]">
@@ -76,35 +120,45 @@ export default function SearchResults({
         </form>
       </div>
 
-      {/* Filter tokens */}
+      {/* Filter tokens - grouped by type */}
       <div className="flex flex-wrap items-center gap-2 mt-3 mb-1">
-        {filters.map((f, i) => (
-          <div key={`${f.type}-${f.value}-${i}`} className="relative">
+        {grouped.map((g) => (
+          <div key={g.type} className="relative">
             <div
               onClick={() => {
-                if (f.type === "Location") setShowGeoDropdown(!showGeoDropdown);
+                if (g.type === "Location") setShowGeoDropdown(!showGeoDropdown);
               }}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
-                f.source === "prompt"
+                g.fromPrompt
                   ? "bg-white border-accent-border text-accent"
                   : "bg-white border-border text-text-primary"
               }`}
             >
-              {f.source === "prompt" && (
+              {g.fromPrompt && (
                 <span className="text-purple">&#10022;</span>
               )}
-              {f.value}
+              <span className="text-text-tertiary">{g.label}:</span>
+              {g.values.length === 1 ? (
+                <span className="font-semibold">{g.values[0]}</span>
+              ) : (
+                <>
+                  <span className="font-semibold">{g.values[0]}</span>
+                  <span className="ml-0.5 w-5 h-5 rounded-full bg-accent/10 text-accent text-[10px] flex items-center justify-center font-semibold">
+                    {g.values.length}
+                  </span>
+                </>
+              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onRemoveFilter(i);
+                  onRemoveFilterByType(g.type);
                 }}
                 className="ml-0.5 opacity-60 hover:opacity-100"
               >
                 &times;
               </button>
             </div>
-            {f.type === "Location" && showGeoDropdown && (
+            {g.type === "Location" && showGeoDropdown && (
               <GeoDropdown
                 currentLocation={locationFilter}
                 onSelect={(loc) => {
@@ -124,9 +178,9 @@ export default function SearchResults({
             <path d="M2 4h10M4 7h6M6 10h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
           All filters
-          {filterCount > 0 && (
+          {promptFilterCount > 0 && (
             <span className="ml-1 w-5 h-5 rounded-full bg-accent text-white text-[10px] flex items-center justify-center font-semibold">
-              {filterCount}
+              {promptFilterCount}
             </span>
           )}
         </button>
