@@ -137,24 +137,14 @@ export default function Home() {
 
   const handleLocationChange = useCallback((newLocation: string) => {
     setFilters((prev) => {
-      const hasLocation = prev.some((f) => f.type === "Location");
-      if (hasLocation) {
-        return prev.map((f) =>
-          f.type === "Location"
-            ? { ...f, value: newLocation, source: "manual" as const }
-            : f
-        );
+      const existing = prev.find(
+        (f) => f.type === "Location" && f.value.toLowerCase() === newLocation.toLowerCase()
+      );
+      if (existing) {
+        return prev.filter((f) => f !== existing);
       }
       return [...prev, { type: "Location", value: newLocation, source: "manual" as const }];
     });
-    setAiMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        content: `Location updated to **${newLocation}**.`,
-        type: "info",
-      },
-    ]);
   }, []);
 
   const handleUserMessage = useCallback(
@@ -384,7 +374,7 @@ export default function Home() {
                   onRemoveFilterByType={handleRemoveFilterByType}
                   onOpenFilterSidebar={() => setShowFilterSidebar(true)}
                   onRelaxFilter={handleRelaxFilter}
-                  locationFilter={filters.find((f) => f.type === "Location")?.value || ""}
+                  selectedLocations={filters.filter((f) => f.type === "Location").map((f) => f.value)}
                 />
               </div>
               <AIPanel
@@ -403,10 +393,9 @@ export default function Home() {
                 setFilters(newFilters);
                 setShowFilterSidebar(false);
               }}
-              locationFilter={filters.find((f) => f.type === "Location")?.value || ""}
+              selectedLocations={filters.filter((f) => f.type === "Location").map((f) => f.value)}
               onLocationChange={(loc) => {
                 handleLocationChange(loc);
-                setShowFilterSidebar(false);
               }}
             />
           )}

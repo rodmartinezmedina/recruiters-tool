@@ -3,8 +3,8 @@
 import { useEffect, useRef } from "react";
 
 interface Props {
-  currentLocation: string;
-  onSelect: (location: string) => void;
+  selectedLocations: string[];
+  onToggle: (location: string) => void;
   onClose: () => void;
 }
 
@@ -29,18 +29,8 @@ const GEO_DATA: Record<string, { cities: string[] }> = {
   Croatia: { cities: ["Zagreb"] },
 };
 
-function findCountryForLocation(location: string): string | null {
-  const lower = location.toLowerCase();
-  for (const [country, data] of Object.entries(GEO_DATA)) {
-    if (country.toLowerCase() === lower) return country;
-    if (data.cities.some((c) => c.toLowerCase() === lower)) return country;
-  }
-  return null;
-}
-
-export default function GeoDropdown({ currentLocation, onSelect, onClose }: Props) {
+export default function GeoDropdown({ selectedLocations, onToggle, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const currentCountry = findCountryForLocation(currentLocation);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -52,13 +42,18 @@ export default function GeoDropdown({ currentLocation, onSelect, onClose }: Prop
     return () => document.removeEventListener("mousedown", handleClick);
   }, [onClose]);
 
+  const selectedSet = new Set(selectedLocations.map((l) => l.toLowerCase()));
+
   return (
     <div
       ref={ref}
       className="absolute top-full left-0 mt-1 w-[320px] bg-white rounded-lg border border-border shadow-lg z-50 max-h-[400px] overflow-y-auto"
     >
-      <div className="px-4 py-2 text-xs text-text-secondary border-b border-border">
-        Select a location
+      <div className="px-4 py-2 text-xs text-text-secondary border-b border-border flex items-center justify-between">
+        <span>Select locations</span>
+        {selectedLocations.length > 0 && (
+          <span className="text-accent font-medium">{selectedLocations.length} selected</span>
+        )}
       </div>
       <div className="py-1">
         {Object.entries(GEO_DATA).map(([country, data]) => (
@@ -67,23 +62,28 @@ export default function GeoDropdown({ currentLocation, onSelect, onClose }: Prop
               {country}
             </div>
             {data.cities.map((city) => {
-              const isSelected = currentLocation.toLowerCase() === city.toLowerCase();
+              const isSelected = selectedSet.has(city.toLowerCase());
               return (
                 <button
                   key={city}
-                  onClick={() => {
-                    onSelect(city);
-                    onClose();
-                  }}
+                  onClick={() => onToggle(city)}
                   className={`w-full px-6 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
                     isSelected
                       ? "bg-accent-light text-accent font-medium"
                       : "text-text-primary hover:bg-chip-bg"
                   }`}
                 >
-                  {isSelected && (
-                    <span className="w-2 h-2 rounded-full bg-accent" />
-                  )}
+                  <div
+                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                      isSelected ? "bg-accent border-accent" : "border-border"
+                    }`}
+                  >
+                    {isSelected && (
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                      </svg>
+                    )}
+                  </div>
                   {city}
                 </button>
               );

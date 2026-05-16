@@ -7,7 +7,7 @@ interface Props {
   filters: Filter[];
   onClose: () => void;
   onFilterChange: (filters: Filter[]) => void;
-  locationFilter: string;
+  selectedLocations: string[];
   onLocationChange: (location: string) => void;
 }
 
@@ -49,7 +49,7 @@ export default function FilterSidebar({
   filters,
   onClose,
   onFilterChange,
-  locationFilter,
+  selectedLocations,
   onLocationChange,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
@@ -209,8 +209,8 @@ export default function FilterSidebar({
         <div className="px-5 py-3 border-b border-border">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-text-primary">Location</span>
-            <span className={`text-xs font-medium ${locationFilter ? "text-accent" : "text-text-tertiary"}`}>
-              {locationFilter || "Any"}
+            <span className={`text-xs font-medium ${selectedLocations.length > 0 ? "text-accent" : "text-text-tertiary"}`}>
+              {selectedLocations.length > 0 ? `${selectedLocations.length} selected` : "Any"}
             </span>
           </div>
           <input
@@ -227,7 +227,7 @@ export default function FilterSidebar({
                   {group.country}
                 </div>
                 {group.cities.map((city) => {
-                  const isSelected = locationFilter.toLowerCase() === city.toLowerCase();
+                  const isSelected = selectedLocations.some((l) => l.toLowerCase() === city.toLowerCase());
                   return (
                     <button
                       key={city}

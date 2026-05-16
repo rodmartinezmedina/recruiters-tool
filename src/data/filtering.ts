@@ -33,7 +33,7 @@ export function filterAndScore(
 
   const titleFilter = filters.find((f) => f.type === "Title");
   const skillFilters = filters.filter((f) => f.type === "Skill");
-  const locationFilter = filters.find((f) => f.type === "Location");
+  const locationFilters = filters.filter((f) => f.type === "Location");
   const expFilter = filters.find((f) => f.type === "Experience");
   const workFilter = filters.find((f) => f.type === "Work pref");
 
@@ -76,21 +76,33 @@ export function filterAndScore(
     }
 
     // Location matching (15 points)
-    if (locationFilter) {
+    if (locationFilters.length > 0) {
       maxScore += 15;
-      const loc = locationFilter.value.toLowerCase();
-      if (
-        candidate.city.toLowerCase() === loc ||
-        candidate.country.toLowerCase() === loc
-      ) {
-        score += 15;
-        tags.push({ label: candidate.city, source: locationFilter.source === "manual" ? "filter" : "prompt" });
-      } else if (
-        candidate.city.toLowerCase().includes(loc) ||
-        candidate.country.toLowerCase().includes(loc)
-      ) {
-        score += 10;
-        tags.push({ label: candidate.city, source: "partial" });
+      let locationMatched = false;
+      for (const lf of locationFilters) {
+        const loc = lf.value.toLowerCase();
+        if (
+          candidate.city.toLowerCase() === loc ||
+          candidate.country.toLowerCase() === loc
+        ) {
+          score += 15;
+          tags.push({ label: candidate.city, source: lf.source === "manual" ? "filter" : "prompt" });
+          locationMatched = true;
+          break;
+        }
+      }
+      if (!locationMatched) {
+        for (const lf of locationFilters) {
+          const loc = lf.value.toLowerCase();
+          if (
+            candidate.city.toLowerCase().includes(loc) ||
+            candidate.country.toLowerCase().includes(loc)
+          ) {
+            score += 10;
+            tags.push({ label: candidate.city, source: "partial" });
+            break;
+          }
+        }
       }
     }
 

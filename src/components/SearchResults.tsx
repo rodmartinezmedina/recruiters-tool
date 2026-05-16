@@ -21,7 +21,7 @@ interface Props {
   onRemoveFilterByType: (type: string) => void;
   onOpenFilterSidebar: () => void;
   onRelaxFilter: (filterType?: string) => void;
-  locationFilter: string;
+  selectedLocations: string[];
 }
 
 interface GroupedFilter {
@@ -47,7 +47,7 @@ export default function SearchResults({
   onRemoveFilterByType,
   onOpenFilterSidebar,
   onRelaxFilter,
-  locationFilter,
+  selectedLocations,
 }: Props) {
   const [showGeoDropdown, setShowGeoDropdown] = useState(false);
   const promptFilterCount = filters.filter((f) => f.source === "prompt").length;
@@ -154,11 +154,8 @@ export default function SearchResults({
             </div>
             {g.type === "Location" && showGeoDropdown && (
               <GeoDropdown
-                currentLocation={locationFilter}
-                onSelect={(loc) => {
-                  onLocationChange(loc);
-                  setShowGeoDropdown(false);
-                }}
+                selectedLocations={selectedLocations}
+                onToggle={onLocationChange}
                 onClose={() => setShowGeoDropdown(false)}
               />
             )}
