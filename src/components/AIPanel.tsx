@@ -77,12 +77,7 @@ export default function AIPanel({
     <div className="w-[300px] bg-white border-l border-border flex flex-col shrink-0 h-full">
       {/* Header */}
       <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded bg-chip-bg flex items-center justify-center text-[10px]">
-            &#9638;
-          </div>
-          <span className="text-sm font-semibold text-text-primary">AI Assistant</span>
-        </div>
+        <span className="text-sm font-semibold text-text-primary">AI Assistant</span>
         <div className="flex items-center gap-2">
           <span className="text-purple text-lg">&#10022;</span>
           <button
@@ -124,24 +119,25 @@ export default function AIPanel({
 
           if (msg.type === "extraction") {
             return (
-              <div key={i}>
+              <div key={i} className="rounded-lg bg-purple-light p-4">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <span className="w-2 h-2 rounded-full bg-accent" />
-                  <span className="text-xs font-semibold text-accent">AI Assistant</span>
+                  <span className="w-2 h-2 rounded-full bg-purple" />
+                  <span className="text-xs font-semibold text-purple">AI Assistant</span>
                 </div>
-                <p className="text-[13px] text-text-secondary mb-3 whitespace-pre-line">
+                <p className="text-[13px] text-text-primary mb-3 whitespace-pre-line">
                   {msg.content}
                 </p>
                 {msg.filters && (
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-2">
                     {msg.filters.map((f: Filter, j: number) => (
                       <div
                         key={j}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-purple-light bg-purple-light text-xs font-medium text-purple mr-2"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border bg-white text-xs font-medium text-text-primary self-start"
                       >
-                        <span>&#10022;</span>
-                        {f.type}: <strong>{f.value}</strong>
-                        <button className="ml-1 opacity-60 hover:opacity-100">&times;</button>
+                        <span className="text-purple">&#10022;</span>
+                        <span className="text-text-secondary font-normal">{f.type}:</span>
+                        <span>{f.value}</span>
+                        <button className="ml-0.5 text-text-tertiary hover:text-text-primary">&times;</button>
                       </div>
                     ))}
                   </div>
@@ -180,10 +176,10 @@ export default function AIPanel({
 
           if (msg.type === "resolution") {
             return (
-              <div key={i} className="rounded-lg border border-confirmed-border bg-confirmed-bg p-4">
+              <div key={i} className="rounded-lg bg-purple-light p-4">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-accent" />
-                  <span className="text-xs font-semibold text-accent">AI Assistant</span>
+                  <span className="w-2 h-2 rounded-full bg-purple" />
+                  <span className="text-xs font-semibold text-purple">AI Assistant</span>
                 </div>
                 <p className="text-[13px] text-text-primary whitespace-pre-line">
                   {renderBold(msg.content)}
@@ -193,12 +189,12 @@ export default function AIPanel({
           }
 
           return (
-            <div key={i}>
+            <div key={i} className="rounded-lg bg-purple-light p-4">
               <div className="flex items-center gap-1.5 mb-1">
-                <span className="w-2 h-2 rounded-full bg-accent" />
-                <span className="text-xs font-semibold text-accent">AI Assistant</span>
+                <span className="w-2 h-2 rounded-full bg-purple" />
+                <span className="text-xs font-semibold text-purple">AI Assistant</span>
               </div>
-              <p className="text-[13px] text-text-secondary whitespace-pre-line">
+              <p className="text-[13px] text-text-primary whitespace-pre-line">
                 {renderBold(msg.content)}
               </p>
             </div>
