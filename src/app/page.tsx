@@ -38,6 +38,66 @@ export interface AIMessage {
 
 const TOO_BROAD_THRESHOLD = 40;
 
+const SINGLE_VALUE_TYPES = new Set(["Title", "Experience", "Last active"]);
+
+function describeFilterDiff(prev: Filter[], next: Filter[]): string | null {
+  const key = (f: Filter) => `${f.type}::${f.value}`;
+  const prevSet = new Set(prev.map(key));
+  const nextSet = new Set(next.map(key));
+  const added = next.filter((f) => !prevSet.has(key(f)));
+  const removed = prev.filter((f) => !nextSet.has(key(f)));
+
+  if (added.length === 0 && removed.length === 0) return null;
+
+  const parts: string[] = [];
+  const consumedAdds = new Set<number>();
+  const consumedRems = new Set<number>();
+
+  // Detect value changes for single-value types (e.g. Experience +5 → +8)
+  for (let i = 0; i < removed.length; i++) {
+    if (!SINGLE_VALUE_TYPES.has(removed[i].type)) continue;
+    const matchIdx = added.findIndex(
+      (a, j) => !consumedAdds.has(j) && a.type === removed[i].type
+    );
+    if (matchIdx >= 0) {
+      parts.push(
+        `**${removed[i].type}** updated to **${added[matchIdx].value}**`
+      );
+      consumedRems.add(i);
+      consumedAdds.add(matchIdx);
+    }
+  }
+
+  const remainingAdds = added.filter((_, j) => !consumedAdds.has(j));
+  const remainingRems = removed.filter((_, i) => !consumedRems.has(i));
+
+  if (remainingAdds.length > 0) {
+    const grouped = groupByType(remainingAdds);
+    for (const [type, values] of grouped) {
+      parts.push(`Added **${type}**: ${values.join(", ")}`);
+    }
+  }
+  if (remainingRems.length > 0) {
+    const grouped = groupByType(remainingRems);
+    for (const [type, values] of grouped) {
+      parts.push(`Removed **${type}**: ${values.join(", ")}`);
+    }
+  }
+
+  if (parts.length === 0) return null;
+  return parts.join(". ") + ".";
+}
+
+function groupByType(filters: Filter[]): Map<string, string[]> {
+  const map = new Map<string, string[]>();
+  for (const f of filters) {
+    const list = map.get(f.type) ?? [];
+    list.push(f.value);
+    map.set(f.type, list);
+  }
+  return map;
+}
+
 export default function Home() {
   const [appState, setAppState] = useState<AppState>("start");
   const [prompt, setPrompt] = useState("");
@@ -161,17 +221,25 @@ export default function Home() {
     [prompt, appState]
   );
 
-  const handleLocationChange = useCallback((newLocation: string) => {
-    setFilters((prev) => {
-      const existing = prev.find(
+  const handleLocationChange = useCallback(
+    (newLocation: string) => {
+      const existing = filters.find(
         (f) => f.type === "Location" && f.value.toLowerCase() === newLocation.toLowerCase()
       );
-      if (existing) {
-        return prev.filter((f) => f !== existing);
+      const next: Filter[] = existing
+        ? filters.filter((f) => f !== existing)
+        : [...filters, { type: "Location", value: newLocation, source: "manual" as const }];
+      const summary = describeFilterDiff(filters, next);
+      setFilters(next);
+      if (summary) {
+        setAiMessages((msgs) => [
+          ...msgs,
+          { role: "assistant", content: summary, type: "info" },
+        ]);
       }
-      return [...prev, { type: "Location", value: newLocation, source: "manual" as const }];
-    });
-  }, []);
+    },
+    [filters]
+  );
 
   const handleUserMessage = useCallback(
     (message: string) => {
@@ -348,31 +416,47 @@ export default function Home() {
     [filters, pendingNewLocations]
   );
 
-  const handleRemoveFilter = useCallback((index: number) => {
-    setFilters((prev) => {
-      const updated = prev.filter((_, i) => i !== index);
+  const handleRemoveFilter = useCallback(
+    (index: number) => {
+      const updated = filters.filter((_, i) => i !== index);
+      setFilters(updated);
       if (updated.length === 0) {
         setAppState("start");
         setPrompt("");
         setAiMessages([]);
-        return updated;
+        return;
       }
-      return updated;
-    });
-  }, []);
+      const summary = describeFilterDiff(filters, updated);
+      if (summary) {
+        setAiMessages((msgs) => [
+          ...msgs,
+          { role: "assistant", content: summary, type: "info" },
+        ]);
+      }
+    },
+    [filters]
+  );
 
-  const handleRemoveFilterByType = useCallback((type: string) => {
-    setFilters((prev) => {
-      const updated = prev.filter((f) => f.type !== type);
+  const handleRemoveFilterByType = useCallback(
+    (type: string) => {
+      const updated = filters.filter((f) => f.type !== type);
+      setFilters(updated);
       if (updated.length === 0) {
         setAppState("start");
         setPrompt("");
         setAiMessages([]);
-        return updated;
+        return;
       }
-      return updated;
-    });
-  }, []);
+      const summary = describeFilterDiff(filters, updated);
+      if (summary) {
+        setAiMessages((msgs) => [
+          ...msgs,
+          { role: "assistant", content: summary, type: "info" },
+        ]);
+      }
+    },
+    [filters]
+  );
 
   const handleRelaxFilter = useCallback(
     (filterType?: string) => {
@@ -422,6 +506,20 @@ export default function Home() {
     setExpandedCard(null);
   }, []);
 
+  const handleFilterChange = useCallback(
+    (next: Filter[]) => {
+      const summary = describeFilterDiff(filters, next);
+      setFilters(next);
+      if (summary) {
+        setAiMessages((msgs) => [
+          ...msgs,
+          { role: "assistant", content: summary, type: "info" },
+        ]);
+      }
+    },
+    [filters]
+  );
+
   const resultCount =
     appState === "zero-results"
       ? "0"
@@ -461,7 +559,7 @@ export default function Home() {
                   onRemoveFilterByType={handleRemoveFilterByType}
                   onOpenFilterSidebar={() => setShowFilterSidebar(true)}
                   onRelaxFilter={handleRelaxFilter}
-                  onFilterChange={setFilters}
+                  onFilterChange={handleFilterChange}
                   onPromptChange={setPrompt}
                   selectedLocations={filters.filter((f) => f.type === "Location").map((f) => f.value)}
                 />
@@ -480,7 +578,7 @@ export default function Home() {
             <FilterSidebar
               filters={filters}
               onClose={() => setShowFilterSidebar(false)}
-              onFilterChange={setFilters}
+              onFilterChange={handleFilterChange}
               onClearAll={handleClearFilters}
               selectedLocations={filters.filter((f) => f.type === "Location").map((f) => f.value)}
               onLocationChange={(loc) => {
