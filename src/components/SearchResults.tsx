@@ -78,7 +78,13 @@ export default function SearchResults({
 }: Props) {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [editingPrompt, setEditingPrompt] = useState(false);
+  const [draftPrompt, setDraftPrompt] = useState(prompt);
   const promptFilterCount = filters.filter((f) => f.source === "prompt").length;
+
+  useEffect(() => {
+    setDraftPrompt(prompt);
+  }, [prompt]);
 
   const grouped = useMemo(() => {
     const groups: GroupedFilter[] = [];
@@ -374,31 +380,85 @@ export default function SearchResults({
 
   return (
     <div className="max-w-[920px] mx-auto">
-      {/* Search bar */}
-      <div className="mb-1">
-        <label className="text-xs font-medium text-text-tertiary mb-1.5 block">
-          Initial prompt / text search
-        </label>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSearch();
-          }}
-          className="flex gap-2"
+      {/* Starting search prompt */}
+      <div className="mb-8 pb-5 border-b border-border flex items-end justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-text-tertiary mb-1">
+            Starting search prompt
+          </p>
+          {editingPrompt ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                onPromptChange(draftPrompt);
+                onSearch(draftPrompt);
+                setEditingPrompt(false);
+              }}
+              className="flex gap-2"
+            >
+              <input
+                autoFocus
+                type="text"
+                value={draftPrompt}
+                onChange={(e) => setDraftPrompt(e.target.value)}
+                className="flex-1 h-9 px-3 rounded-md border border-accent bg-white text-sm text-text-primary focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="h-9 px-3 rounded-md bg-accent text-white text-xs font-semibold hover:bg-accent/90 transition-colors"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDraftPrompt(prompt);
+                  setEditingPrompt(false);
+                }}
+                className="h-9 px-3 rounded-md border border-border text-xs font-medium text-text-primary hover:bg-chip-bg transition-colors"
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-text-primary">{prompt}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setDraftPrompt(prompt);
+                  setEditingPrompt(true);
+                }}
+                className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-xs font-medium text-text-secondary border border-border bg-white hover:text-accent hover:border-accent transition-colors"
+                aria-label="Edit prompt"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="m15 5 4 4"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                Edit
+              </button>
+            </div>
+          )}
+        </div>
+        <button
+          onClick={() => setShowClearConfirm(true)}
+          className="text-xs font-medium text-accent hover:underline shrink-0 leading-none pb-1"
         >
-          <input
-            type="text"
-            value={prompt}
-            onChange={(e) => onPromptChange(e.target.value)}
-            className="flex-1 h-11 px-4 rounded-lg border-2 border-accent bg-white text-sm text-text-primary focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="h-11 px-5 rounded-lg bg-accent text-white text-sm font-semibold hover:bg-accent/90 transition-colors"
-          >
-            Search
-          </button>
-        </form>
+          Start new search
+        </button>
       </div>
 
       {/* Filter tokens - grouped by type */}
@@ -450,32 +510,26 @@ export default function SearchResults({
             </span>
           )}
         </div>
-        <button
-          onClick={() => setShowClearConfirm(true)}
-          className="text-xs font-medium text-accent hover:underline ml-1"
-        >
-          Clear
-        </button>
       </div>
 
       {showClearConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/20" onClick={() => setShowClearConfirm(false)} />
-          <div className="relative bg-white rounded-lg border border-border shadow-xl p-5 w-[320px]">
-            <p className="text-sm font-semibold text-text-primary mb-1">Clear all filters?</p>
-            <p className="text-xs text-text-secondary mb-4">This will remove all filters and return to the start screen.</p>
+          <div className="relative bg-white rounded-lg border border-border shadow-xl p-5 w-[340px]">
+            <p className="text-sm font-semibold text-text-primary mb-1">Start a new search?</p>
+            <p className="text-xs text-text-secondary mb-4">This will clear your prompt, filters, and AI conversation.</p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowClearConfirm(false)}
                 className="px-4 py-1.5 rounded-md text-sm font-medium text-text-primary border border-border hover:bg-chip-bg transition-colors"
               >
-                No
+                Cancel
               </button>
               <button
                 onClick={() => { setShowClearConfirm(false); onClearFilters(); }}
                 className="px-4 py-1.5 rounded-md text-sm font-medium text-white bg-accent hover:bg-accent/90 transition-colors"
               >
-                Yes
+                Yes, start over
               </button>
             </div>
           </div>

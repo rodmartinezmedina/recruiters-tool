@@ -11,11 +11,11 @@ interface Props {
 function tagColor(source: "prompt" | "filter" | "partial") {
   switch (source) {
     case "prompt":
-      return "bg-accent-light text-accent border-accent-border";
+      return "bg-transparent text-purple border-purple/30";
     case "filter":
-      return "bg-white text-text-primary border-border";
+      return "bg-transparent text-text-primary border-border";
     case "partial":
-      return "bg-conflict-bg text-conflict-border border-conflict-border";
+      return "bg-transparent text-conflict-border border-conflict-border";
   }
 }
 
@@ -78,23 +78,23 @@ export default function CandidateCard({ candidate, expanded, onToggle }: Props) 
               <span className="text-purple">&#10022;</span> From prompt
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-text-secondary inline-block" /> From filter
+              <span className="w-2 h-2 rounded-full bg-text-secondary inline-block" /> Manual filter
             </span>
             <span className="flex items-center gap-1">
               <span className="text-conflict-border">&#10022;</span> Partial match
             </span>
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {candidate.matchTags.map((tag, i) => (
               <span
                 key={i}
-                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border ${tagColor(
+                className={`inline-flex items-center gap-1 px-2 py-[1px] rounded-full text-[11px] font-medium border ${tagColor(
                   tag.source
                 )}`}
               >
-                {tag.source === "prompt" && <span className="text-purple">&#10022;</span>}
+                {tag.source === "prompt" && <span className="text-purple text-[9px]">&#10022;</span>}
                 {tag.source === "partial" && (
-                  <span className="text-conflict-border">&#10022;</span>
+                  <span className="text-conflict-border text-[9px]">&#10022;</span>
                 )}
                 {tag.label}
               </span>

@@ -8,6 +8,8 @@ interface Props {
   onSendMessage: (message: string) => void;
   onConflictResolve: (option: string) => void;
   appState: AppState;
+  collapsed: boolean;
+  onToggle: () => void;
 }
 
 function renderBold(text: string) {
@@ -28,6 +30,8 @@ export default function AIPanel({
   onSendMessage,
   onConflictResolve,
   appState,
+  collapsed,
+  onToggle,
 }: Props) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -43,6 +47,32 @@ export default function AIPanel({
     setInput("");
   };
 
+  if (collapsed) {
+    return (
+      <div className="w-14 bg-white border-l border-border flex flex-col items-center shrink-0 h-full pt-3 pb-3 gap-3">
+        <button
+          onClick={onToggle}
+          aria-label="Expand AI Assistant"
+          title="AI Assistant"
+          className="w-8 h-8 rounded-md text-text-secondary hover:text-text-primary hover:bg-chip-bg border border-border bg-white flex items-center justify-center transition-colors shrink-0"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M15 6l-6 6 6 6"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+        <div className="w-8 h-8 rounded-md flex items-center justify-center text-purple text-xl">
+          &#10022;
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-[300px] bg-white border-l border-border flex flex-col shrink-0 h-full">
       {/* Header */}
@@ -53,7 +83,24 @@ export default function AIPanel({
           </div>
           <span className="text-sm font-semibold text-text-primary">AI Assistant</span>
         </div>
-        <span className="text-purple text-lg">&#10022;</span>
+        <div className="flex items-center gap-2">
+          <span className="text-purple text-lg">&#10022;</span>
+          <button
+            onClick={onToggle}
+            aria-label="Collapse AI Assistant"
+            className="w-8 h-8 rounded-md text-text-secondary hover:text-text-primary hover:bg-chip-bg border border-border bg-white flex items-center justify-center transition-colors shrink-0"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M9 6l6 6-6 6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Messages */}

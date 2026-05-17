@@ -46,6 +46,8 @@ export default function Home() {
   const [showFilterSidebar, setShowFilterSidebar] = useState(false);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const [pendingNewLocations, setPendingNewLocations] = useState<string[]>([]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [aiPanelCollapsed, setAiPanelCollapsed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filteredCandidates = useMemo(() => {
@@ -427,7 +429,10 @@ export default function Home() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg">
-      <Sidebar />
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed((v) => !v)}
+      />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar />
         <main className="flex flex-1 overflow-hidden relative">
@@ -466,6 +471,8 @@ export default function Home() {
                 onSendMessage={handleUserMessage}
                 onConflictResolve={handleConflictResolve}
                 appState={appState}
+                collapsed={aiPanelCollapsed}
+                onToggle={() => setAiPanelCollapsed((v) => !v)}
               />
             </div>
           )}
