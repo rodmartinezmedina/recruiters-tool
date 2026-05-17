@@ -432,42 +432,70 @@ export default function FilterSidebar({
                 className="w-full h-8 px-3 mb-2 rounded border border-border text-xs placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent"
               />
               <div className="max-h-[200px] overflow-y-auto space-y-0.5">
-                {filteredLocations.map((group) => (
-                  <div key={group.country}>
-                    <div className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wide px-2 py-1">
-                      {group.country}
-                    </div>
-                    {group.cities.map((city) => {
-                      const isSelected = selectedLocations.some((l) => l.toLowerCase() === city.toLowerCase());
-                      return (
-                        <button
-                          key={city}
-                          onClick={() => onLocationChange(city)}
-                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors ${
-                            isSelected
-                              ? "text-accent font-medium bg-accent-light"
-                              : "text-text-primary hover:bg-chip-bg"
+                {filteredLocations.map((group) => {
+                  const countrySelected = selectedLocations.some(
+                    (l) => l.toLowerCase() === group.country.toLowerCase()
+                  );
+                  return (
+                    <div key={group.country}>
+                      <div className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wide px-2 py-1">
+                        {group.country}
+                      </div>
+                      <button
+                        onClick={() => onLocationChange(group.country)}
+                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors ${
+                          countrySelected
+                            ? "text-accent font-medium bg-accent-light"
+                            : "text-text-primary hover:bg-chip-bg"
+                        }`}
+                      >
+                        <div
+                          className={`w-4 h-4 rounded border flex items-center justify-center ${
+                            countrySelected
+                              ? "bg-accent border-accent"
+                              : "border-border"
                           }`}
                         >
-                          <div
-                            className={`w-4 h-4 rounded border flex items-center justify-center ${
+                          {countrySelected && (
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                              <path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                            </svg>
+                          )}
+                        </div>
+                        All of {group.country}
+                      </button>
+                      {group.cities.map((city) => {
+                        const isSelected = selectedLocations.some((l) => l.toLowerCase() === city.toLowerCase());
+                        return (
+                          <button
+                            key={city}
+                            onClick={() => onLocationChange(city)}
+                            className={`w-full flex items-center gap-2 pl-5 pr-2 py-1.5 rounded text-sm text-left transition-colors ${
                               isSelected
-                                ? "bg-accent border-accent"
-                                : "border-border"
+                                ? "text-accent font-medium bg-accent-light"
+                                : "text-text-primary hover:bg-chip-bg"
                             }`}
                           >
-                            {isSelected && (
-                              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                                <path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-                              </svg>
-                            )}
-                          </div>
-                          {city}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
+                            <div
+                              className={`w-4 h-4 rounded border flex items-center justify-center ${
+                                isSelected
+                                  ? "bg-accent border-accent"
+                                  : "border-border"
+                              }`}
+                            >
+                              {isSelected && (
+                                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                  <path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                                </svg>
+                              )}
+                            </div>
+                            {city}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

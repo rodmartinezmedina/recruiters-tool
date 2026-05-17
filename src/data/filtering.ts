@@ -65,7 +65,12 @@ export function filterAndScore(
     const tags: MatchTag[] = [];
     let partialNote: string | undefined;
 
-    // Title matching (25 points)
+    // AND semantics: a candidate must match every active filter type
+    // (with partial matches allowed on Title and Experience). This
+    // guarantees monotonicity — removing a filter never reduces the
+    // result set, only expands it.
+
+    // Title (required if present, partial allowed)
     if (titleFilter) {
       maxScore += 25;
       const match = titleMatch(candidate.title, titleFilter.value);
@@ -75,23 +80,30 @@ export function filterAndScore(
       } else if (match === "partial") {
         score += 15;
         tags.push({ label: titleFilter.value, source: "partial" });
+      } else {
+        continue;
       }
     }
 
-    // Skill matching (20 points each, up to 3)
-    for (const sf of skillFilters) {
-      maxScore += 20;
-      const normalizedFilter = normalizeSkill(sf.value);
-      const hasSkill = candidate.skills.some(
-        (s) => normalizeSkill(s) === normalizedFilter
-      );
-      if (hasSkill) {
-        score += 20;
-        tags.push({ label: sf.value, source: sf.source === "manual" ? "filter" : "prompt" });
+    // Skill (required: at least one skill must match if any skill filter present)
+    if (skillFilters.length > 0) {
+      let skillMatched = false;
+      for (const sf of skillFilters) {
+        maxScore += 20;
+        const normalizedFilter = normalizeSkill(sf.value);
+        const hasSkill = candidate.skills.some(
+          (s) => normalizeSkill(s) === normalizedFilter
+        );
+        if (hasSkill) {
+          score += 20;
+          tags.push({ label: sf.value, source: sf.source === "manual" ? "filter" : "prompt" });
+          skillMatched = true;
+        }
       }
+      if (!skillMatched) continue;
     }
 
-    // Location matching (15 points) - hard filter: exclude non-matching candidates
+    // Location (required if present, hard filter)
     if (locationFilters.length > 0) {
       maxScore += 15;
       let locationScore = 0;
@@ -110,7 +122,7 @@ export function filterAndScore(
       score += locationScore;
     }
 
-    // Experience matching (10 points)
+    // Experience (required if present, ±1 year tolerance for partial)
     if (expFilter && expThreshold > 0) {
       maxScore += 10;
       if (candidate.experienceYears >= expThreshold) {
@@ -123,10 +135,12 @@ export function filterAndScore(
         score += 5;
         tags.push({ label: `~${expThreshold} years experience`, source: "partial" });
         partialNote = `Candidate has ${candidate.experienceYears}y experience. Prompt says +${expThreshold} years, this is a partial match.`;
+      } else {
+        continue;
       }
     }
 
-    // Work pref matching (10 points)
+    // Work pref (required if present; remote-asked + hybrid-candidate = partial)
     if (workFilters.length > 0) {
       maxScore += 10;
       const cp = candidate.workPref.toLowerCase();
@@ -148,6 +162,8 @@ export function filterAndScore(
         if (hasRemote && cp.includes("hybrid")) {
           score += 5;
           tags.push({ label: candidate.workPref, source: "partial" });
+        } else {
+          continue;
         }
       }
     }
@@ -156,8 +172,7 @@ export function filterAndScore(
 
     const pct = Math.round((score / maxScore) * 100);
 
-    // Only include candidates with at least 30% match
-    if (pct >= 30) {
+    {
       scored.push({
         ...candidate,
         dynamicScore: pct,

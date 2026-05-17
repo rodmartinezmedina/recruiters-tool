@@ -49,8 +49,11 @@ export default function GeoDropdown({ selectedLocations, onToggle, onClose }: Pr
     uk: "UK",
   };
 
-  function isCitySelected(city: string, country: string): boolean {
-    if (selectedSet.has(city.toLowerCase())) return true;
+  function isCitySelected(city: string): boolean {
+    return selectedSet.has(city.toLowerCase());
+  }
+
+  function isCountrySelected(country: string): boolean {
     if (selectedSet.has(country.toLowerCase())) return true;
     const alias = COUNTRY_ALIASES[country.toLowerCase()];
     if (alias && selectedSet.has(alias.toLowerCase())) return true;
@@ -82,40 +85,64 @@ export default function GeoDropdown({ selectedLocations, onToggle, onClose }: Pr
         )}
       </div>
       <div className="py-1">
-        {Object.entries(GEO_DATA).map(([country, data]) => (
-          <div key={country}>
-            <div className="px-4 py-1.5 text-[11px] font-semibold text-text-tertiary uppercase tracking-wide">
-              {country}
-            </div>
-            {data.cities.map((city) => {
-              const isSelected = isCitySelected(city, country);
-              return (
-                <button
-                  key={city}
-                  onClick={() => onToggle(city)}
-                  className={`w-full px-6 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
-                    isSelected
-                      ? "bg-accent-light text-accent font-medium"
-                      : "text-text-primary hover:bg-chip-bg"
+        {Object.entries(GEO_DATA).map(([country, data]) => {
+          const countrySelected = isCountrySelected(country);
+          return (
+            <div key={country}>
+              <div className="px-4 py-1.5 text-[11px] font-semibold text-text-tertiary uppercase tracking-wide">
+                {country}
+              </div>
+              <button
+                onClick={() => onToggle(country)}
+                className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                  countrySelected
+                    ? "bg-accent-light text-accent font-medium"
+                    : "text-text-primary hover:bg-chip-bg"
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                    countrySelected ? "bg-accent border-accent" : "border-border"
                   }`}
                 >
-                  <div
-                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                      isSelected ? "bg-accent border-accent" : "border-border"
+                  {countrySelected && (
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  )}
+                </div>
+                All of {country}
+              </button>
+              {data.cities.map((city) => {
+                const isSelected = isCitySelected(city);
+                return (
+                  <button
+                    key={city}
+                    onClick={() => onToggle(city)}
+                    className={`w-full px-6 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                      isSelected
+                        ? "bg-accent-light text-accent font-medium"
+                        : "text-text-primary hover:bg-chip-bg"
                     }`}
                   >
-                    {isSelected && (
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                        <path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-                      </svg>
-                    )}
-                  </div>
-                  {city}
-                </button>
-              );
-            })}
-          </div>
-        ))}
+                    <div
+                      className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                        isSelected ? "bg-accent border-accent" : "border-border"
+                      }`}
+                    >
+                      {isSelected && (
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                          <path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                        </svg>
+                      )}
+                    </div>
+                    {city}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

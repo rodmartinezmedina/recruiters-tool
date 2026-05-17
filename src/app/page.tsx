@@ -109,6 +109,31 @@ export default function Home() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [aiPanelCollapsed, setAiPanelCollapsed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const filtersRef = useRef<Filter[]>(filters);
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
+
+  const applyFilters = useCallback((next: Filter[]) => {
+    const prev = filtersRef.current;
+    const summary = describeFilterDiff(prev, next);
+    filtersRef.current = next;
+    setFilters(next);
+    if (next.length === 0) {
+      setAppState("start");
+      setPrompt("");
+      setAiMessages([]);
+      setExpandedCard(null);
+      return next;
+    }
+    if (summary) {
+      setAiMessages((msgs) => [
+        ...msgs,
+        { role: "assistant", content: summary, type: "info" },
+      ]);
+    }
+    return next;
+  }, []);
 
   const filteredCandidates = useMemo(() => {
     if (appState === "start") return [];
@@ -223,22 +248,16 @@ export default function Home() {
 
   const handleLocationChange = useCallback(
     (newLocation: string) => {
-      const existing = filters.find(
+      const current = filtersRef.current;
+      const existing = current.find(
         (f) => f.type === "Location" && f.value.toLowerCase() === newLocation.toLowerCase()
       );
       const next: Filter[] = existing
-        ? filters.filter((f) => f !== existing)
-        : [...filters, { type: "Location", value: newLocation, source: "manual" as const }];
-      const summary = describeFilterDiff(filters, next);
-      setFilters(next);
-      if (summary) {
-        setAiMessages((msgs) => [
-          ...msgs,
-          { role: "assistant", content: summary, type: "info" },
-        ]);
-      }
+        ? current.filter((f) => f !== existing)
+        : [...current, { type: "Location", value: newLocation, source: "manual" as const }];
+      applyFilters(next);
     },
-    [filters]
+    [applyFilters]
   );
 
   const handleUserMessage = useCallback(
@@ -418,44 +437,36 @@ export default function Home() {
 
   const handleRemoveFilter = useCallback(
     (index: number) => {
-      const updated = filters.filter((_, i) => i !== index);
-      setFilters(updated);
+      const current = filtersRef.current;
+      const updated = current.filter((_, i) => i !== index);
       if (updated.length === 0) {
+        filtersRef.current = updated;
+        setFilters(updated);
         setAppState("start");
         setPrompt("");
         setAiMessages([]);
         return;
       }
-      const summary = describeFilterDiff(filters, updated);
-      if (summary) {
-        setAiMessages((msgs) => [
-          ...msgs,
-          { role: "assistant", content: summary, type: "info" },
-        ]);
-      }
+      applyFilters(updated);
     },
-    [filters]
+    [applyFilters]
   );
 
   const handleRemoveFilterByType = useCallback(
     (type: string) => {
-      const updated = filters.filter((f) => f.type !== type);
-      setFilters(updated);
+      const current = filtersRef.current;
+      const updated = current.filter((f) => f.type !== type);
       if (updated.length === 0) {
+        filtersRef.current = updated;
+        setFilters(updated);
         setAppState("start");
         setPrompt("");
         setAiMessages([]);
         return;
       }
-      const summary = describeFilterDiff(filters, updated);
-      if (summary) {
-        setAiMessages((msgs) => [
-          ...msgs,
-          { role: "assistant", content: summary, type: "info" },
-        ]);
-      }
+      applyFilters(updated);
     },
-    [filters]
+    [applyFilters]
   );
 
   const handleRelaxFilter = useCallback(
@@ -499,6 +510,7 @@ export default function Home() {
   );
 
   const handleClearFilters = useCallback(() => {
+    filtersRef.current = [];
     setFilters([]);
     setAiMessages([]);
     setAppState("start");
@@ -508,16 +520,9 @@ export default function Home() {
 
   const handleFilterChange = useCallback(
     (next: Filter[]) => {
-      const summary = describeFilterDiff(filters, next);
-      setFilters(next);
-      if (summary) {
-        setAiMessages((msgs) => [
-          ...msgs,
-          { role: "assistant", content: summary, type: "info" },
-        ]);
-      }
+      applyFilters(next);
     },
-    [filters]
+    [applyFilters]
   );
 
   const resultCount =
